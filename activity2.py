@@ -2,9 +2,28 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
+import random
 
 def is_present(value):
     return value != "0"
+
+def generate_heatmap(data_matrix, title, xlabel, ylabel, filename):
+    plt.figure(figsize=(10, 10))
+    # Make symmetric by taking upper triangle and mirroring it
+    i_lower = np.tril_indices_from(data_matrix, -1)
+    data_matrix[i_lower] = data_matrix.T[i_lower]
+    np.fill_diagonal(data_matrix, 0 if "Distance" in title else 1)
+    ax = sns.heatmap(data_matrix, cmap="coolwarm" if "Similarity" in title else "viridis", square=True)
+    step = 20
+    tick = list(range(0, data_matrix.shape[0], step))
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
+    plt.xticks(tick, tick)
+    plt.yticks(tick, tick)
+    plt.title(title)
+    plt.xlabel(xlabel, rotation=0)
+    plt.ylabel(ylabel)
+    plt.savefig(filename)
+    plt.close()
 
 def main():
     filename = "GSE64881_segmentation_at_30000bp.passqc.multibam (2).txt"
@@ -269,46 +288,27 @@ def main():
 
         # --- Similarity Heatmap ---
         sim_subset = jaccard_index_matrix[np.ix_(hist1_np_indices_sorted, hist1_np_indices_sorted)].copy()
-
-        # Make symmetric and set diagonal = 1
-        i_lower = np.tril_indices_from(sim_subset, -1)
-        sim_subset[i_lower] = sim_subset.T[i_lower]
-        np.fill_diagonal(sim_subset, 1)
-
-        plt.figure(figsize=(10, 10))
-        ax = sns.heatmap(sim_subset, cmap="coolwarm")
-        plt.title("Jaccard Similarity Heatmap for HIST1 NPs")
-        step = 20
-        ticks = list(range(0, len(hist1_np_indices), step))
-        plt.xlabel("NP Index")
-        plt.ylabel("NP Index")
-        plt.xticks(ticks, ticks)
-        plt.yticks(ticks, ticks)
-        plt.savefig("jaccard_similarity_heatmap_hist1.png")
-        plt.close()
-        #plt.show()
-
+        generate_heatmap(
+            sim_subset,
+            "Jaccard Similarity Heatmap for HIST1 NPs (Function)",
+            "NP Index",
+            "NP Index",
+            "jaccard_similarity_heatmap_hist1_test_function.png"
+        )
         # --- Distance Heatmap ---
         dist_subset = jaccard_distance_matrix[np.ix_(hist1_np_indices_sorted, hist1_np_indices_sorted)].copy()
+        generate_heatmap(
+            dist_subset,
+            "Jaccard Distance Heatmap for HIST1 NPs (Function)",
+            "NP Index",
+            "NP Index",
+            "jaccard_distance_heatmap_hist1_test_function.png"
+        )
 
-        # Make symmetric and set diagonal = 0
-        i_lower = np.tril_indices_from(dist_subset, -1)
-        dist_subset[i_lower] = dist_subset.T[i_lower]
-        np.fill_diagonal(dist_subset, 0)
-
-        plt.figure(figsize=(10, 10))
-        ax = sns.heatmap(dist_subset, cmap="viridis")
-        plt.title("Jaccard Distance Heatmap for HIST1 NPs")
-        plt.xlabel("NP Index")
-        plt.ylabel("NP Index")
-        plt.xticks(ticks, ticks)
-        plt.yticks(ticks, ticks)
-        plt.savefig("jaccard_distance_heatmap_hist1.png")
-        plt.close()
-        #plt.show()
         ## Assignment 6: Clustering
         # Normalize our matrices
         random_seeds = np.random.choice(hist1_np_indices, size=3, replace=False)
+        # New arrays for normalized values
         jaccard_similarity_normalized_matrix = np.zeros((num_nps, num_nps))
         jaccard_distance_normalized_matrix = np.zeros((num_nps, num_nps))
         for i in range(len(hist1_np_indices)):
@@ -319,70 +319,70 @@ def main():
                 windows_np2 = set()
                 # Normalize by mboth / min(a, b)
                 for w_idx in hist1_windows_indices:
+                    # Sum np1 and np2 presence
                     if window_np_presence[w_idx][np1]:
                         windows_np1.add(w_idx)
                     if window_np_presence[w_idx][np2]:
                         windows_np2.add(w_idx)
+                # Calculate intersection and unions
                 intersection = len(windows_np1.intersection(windows_np2))   
                 A_union = len(windows_np1)
            
                 B_union = len(windows_np2)
             
-            # Jaccard similarity normalized
-            jacard_similarity_normalized = intersection / min(A_union, B_union) if min(A_union, B_union) > 0 else 0
-            jaccard_similarity_normalized_matrix[np1][np2] = jacard_similarity_normalized
-            jaccard_distance_normalized_matrix[np2][np1] = jacard_similarity_normalized
-            # Jaccard distance normalized 
-            jaccard_distance_normalized = 1 - jacard_similarity_normalized
-            jaccard_distance_normalized_matrix[np1][np2] = jaccard_distance_normalized
-            jaccard_distance_normalized_matrix[np2][np1] = jaccard_distance_normalized
-        # Heatmaps for normalized matrices can be created similarly if needed
+                # Jaccard similarity normalized
+                jaccard_similarity_normalized = intersection / min(A_union, B_union) if min(A_union, B_union) > 0 else 0
+                jaccard_similarity_normalized_matrix[np1][np2] = jaccard_similarity_normalized
+               
+                # Jaccard distance normalized 
+                jaccard_distance_normalized = 1 - jaccard_similarity_normalized
+                jaccard_distance_normalized_matrix[np1][np2] = jaccard_distance_normalized
+              
+        # Heatmap for normalized similarity matrix
         sim_norm_subset = jaccard_similarity_normalized_matrix[np.ix_(hist1_np_indices_sorted, hist1_np_indices_sorted)].copy()
-        i_lower = np.tril_indices_from(sim_norm_subset, -1)
-        import random
+        generate_heatmap(
+            sim_norm_subset,
+            "Normalized Jaccard Similarity Heatmap for HIST1 NPs (Function)",
+            "NP Index",
+            "NP Index",
+            "jaccard_similarity_normalized_heatmap_hist1_test_function.png"
+        )
+        # Heatmap for normalized distance matrix
+        dist_norm_subset = jaccard_distance_normalized_matrix[np.ix_(hist1_np_indices_sorted, hist1_np_indices_sorted)].copy()
+        generate_heatmap(
+            dist_norm_subset,
+            "Normalized Jaccard Distance Heatmap for HIST1 NPs (Function)",
+            "NP Index",
+            "NP Index",
+            "jaccard_distance_normalized_heatmap_hist1_test_function.png"
+        )
+
+        # K-means clustering with k=3, random initialization
         k = 3
         all_indices = list(hist1_np_indices_sorted)
+        # Randomly select 3 intial centers from hist1_np_indices (163) 
         initial_centers = random.sample(all_indices, k)
         cluster_assignments = np.zeros(len(all_indices), dtype=int)
 
         for i, np_idx in enumerate(all_indices):
             distances = [
+                # Use normalized distance to assign clusters (distance from center in that matrix)
                 jaccard_distance_normalized_matrix[np_idx][center] for center in initial_centers
             ]
+            # Assign to the cluster with the minimum distance 
             cluster_assignments[i] = np.argmin(distances)
-        print("Initial cluster centers:", initial_centers)
-        print("Cluster assignments of NPs:", cluster_assignments)
+
+        print("\n=== K-MEANS CLUSTERING RESULTS ===")
+        print("\nInitial cluster centers:", initial_centers)
         print("Num clusters assigned:", np.bincount(cluster_assignments))
-
-
-        sim_norm_subset[i_lower] = sim_norm_subset.T[i_lower]
-        np.fill_diagonal(sim_norm_subset, 1)
-        plt.figure(figsize=(10, 10))
-        ax =  sns.heatmap(sim_norm_subset, cmap="coolwarm")
-        step = 20
-        ticks = list(range(0, len(hist1_np_indices), step))
-        plt.title("Normalized Jaccard Similarity Heatmap for HIST1 NPs")
-        plt.xlabel("NP Index")
-        plt.ylabel("NP Index")
-        plt.xticks(ticks, ticks)
-        plt.yticks(ticks, ticks)
-        plt.savefig("jaccard_similarity_normalized_heatmap_hist1.png")
-        plt.close()
-        # Heatmap for normalized distance matrix
-        dist_norm_subset = jaccard_distance_normalized_matrix[np.ix_(hist1_np_indices_sorted, hist1_np_indices_sorted)].copy()
-        i_lower = np.tril_indices_from(dist_norm_subset, -1)
-        dist_norm_subset[i_lower] = dist_norm_subset.T[i_lower]
-        np.fill_diagonal(dist_norm_subset, 0)
-        plt.figure(figsize=(10, 10))
-        ax = sns.heatmap(dist_norm_subset, cmap="viridis")
-        plt.title("Normalized Jaccard Distance Heatmap for HIST1 NPs")
-        plt.xlabel("NP Index")
-        plt.ylabel("NP Index")
-        plt.xticks(ticks, ticks)
-        plt.yticks(ticks, ticks)
-        plt.savefig("jaccard_distance_normalized_heatmap_hist1.png")
-        plt.close()
-
+        # Looking through all indices and assigning their cluster to an array 
+        cluster1 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 0]
+        cluster2 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 1]
+        cluster3 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 2]
+        print("\nCluster 1 initial value:", initial_centers[0], "Number of cluster 1 NPs:", len(cluster1), "Cluster 1 NPs:", cluster1)
+        print("\nCluster 2 initial value:", initial_centers[1], "Number of cluster 2 NPs:", len(cluster2), "Cluster 2 NPs:", cluster2)
+        print("\nCluster 3 initial value:", initial_centers[2], "Number of cluster 3 NPs:", len(cluster3), "Cluster 3 NPs:", cluster3)
+        
 if __name__ == "__main__":
     main()
     # testing
