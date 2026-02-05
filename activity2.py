@@ -25,6 +25,47 @@ def generate_heatmap(data_matrix, title, xlabel, ylabel, filename):
     plt.savefig(filename)
     plt.close()
 
+def k_means_clustering(cluster1,cluster2,cluster3, jaccard_distance_normalized_matrix, initial_centers):
+    total_distances = []
+    new_centers = []
+    for cluster_np in cluster1:
+        total = sum (
+            jaccard_distance_normalized_matrix[cluster_np][other_np] for other_np in cluster1
+        )
+        total_distances.append(total)
+    minimum_distance = np.argmin(total_distances)
+    new_centers.append(cluster1[minimum_distance])
+    print("\nCluster 1 NP with minimum total distance to other NPs in cluster:", cluster1[minimum_distance])
+
+    total_distances = []
+    for cluster_np in cluster2:
+        minimum_distance = 0
+        total = sum (
+            jaccard_distance_normalized_matrix[cluster_np][other_np] for other_np in cluster2
+        )
+        total_distances.append(total)
+    minimum_distance = np.argmin(total_distances)
+    new_centers.append(cluster2[minimum_distance])
+    print("Cluster 2 NP with minimum total distance to other NPs in cluster:", cluster2[minimum_distance])
+
+
+    total_distances = []
+    for cluster_np in cluster3:
+        minimum_distance = 0
+        total = sum (
+            jaccard_distance_normalized_matrix[cluster_np][other_np] for other_np in cluster3
+        )
+        total_distances.append(total)
+    minimum_distance = np.argmin(total_distances)
+    new_centers.append(cluster3[minimum_distance])
+    print("Cluster 3 NP with minimum total distance to other NPs in cluster:", cluster3[minimum_distance])
+
+    print("\nNew cluster centers after iteration:", new_centers)
+    return new_centers
+    
+
+    
+
 def main():
     filename = "GSE64881_segmentation_at_30000bp.passqc.multibam (2).txt"
 
@@ -250,9 +291,7 @@ def main():
         # Computer Jaccard Index for Relevant NPs
         # Store in Arrays that are the size of num_nps
         jaccard_index_matrix = np.zeros((num_nps, num_nps))
-        jaccard_distance_matrix = np.zeros((num_nps, num_nps))
-        # Check values 
-        #print("\n=== JACCARD INDEX FOR RELEVANT NPs ===")
+        jaccard_distance_matrix = np.zeros((num_nps, num_nps))        
         # Store hist1 NPs in a list 
         hist1_np_indices = list(hist1_np_indices)
         # Compare each NP to every other NP
@@ -382,6 +421,40 @@ def main():
         print("\nCluster 1 initial value:", initial_centers[0], "Number of cluster 1 NPs:", len(cluster1), "Cluster 1 NPs:", cluster1)
         print("\nCluster 2 initial value:", initial_centers[1], "Number of cluster 2 NPs:", len(cluster2), "Cluster 2 NPs:", cluster2)
         print("\nCluster 3 initial value:", initial_centers[2], "Number of cluster 3 NPs:", len(cluster3), "Cluster 3 NPs:", cluster3)
+        # Find the min distance between each NP in cluster from the Center NP
+        # Do this until the centers don't change 
+        iteration = 0
+        seen_centers = set()
+        while(True):
+            previous_centers = initial_centers.copy()
+            previous_centers_tuple = tuple(previous_centers)
+
+            cluster_assignments = np.zeros(len(all_indices), dtype=int)
+
+            for idx, np_idx in enumerate(all_indices):
+                distances = [
+                    jaccard_distance_normalized_matrix[np_idx][center] for center in initial_centers
+                ]
+                cluster_assignments[idx] = np.argmin(distances)
+
+            cluster1 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 0]
+            cluster2 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 1]
+            cluster3 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 2]
+
+            initial_centers = k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized_matrix, initial_centers)
+            if previous_centers == initial_centers:
+                print("\nK-means clustering converged.")
+                break
+            if previous_centers_tuple in seen_centers:
+                print("\nK-means clustering entered a loop. Stopping.")
+                break
+            seen_centers.add(previous_centers_tuple)
+            iteration += 1
+            
+            if iteration > 1000:
+                print("\nK-means clustering reached maximum iterations.")
+                break
+      
         
 if __name__ == "__main__":
     main()
