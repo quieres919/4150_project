@@ -62,9 +62,6 @@ def k_means_clustering(cluster1,cluster2,cluster3, jaccard_distance_normalized_m
 
     print("\nNew cluster centers after iteration:", new_centers)
     return new_centers
-    
-
-    
 
 def main():
     filename = "GSE64881_segmentation_at_30000bp.passqc.multibam (2).txt"
@@ -426,36 +423,47 @@ def main():
         iteration = 0
         seen_centers = set()
         while(True):
+            # Assign previous centers to compare to new centers after reassignment
             previous_centers = initial_centers.copy()
             previous_centers_tuple = tuple(previous_centers)
 
+            # Reassigm cluster assignmnets based on new centers
             cluster_assignments = np.zeros(len(all_indices), dtype=int)
 
+            # Calculate distance and assign to closest center for each NP
             for idx, np_idx in enumerate(all_indices):
                 distances = [
                     jaccard_distance_normalized_matrix[np_idx][center] for center in initial_centers
                 ]
                 cluster_assignments[idx] = np.argmin(distances)
-
+            
+            # Reassign a new center 
             cluster1 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 0]
             cluster2 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 1]
             cluster3 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 2]
 
+            # Reassign centers 
             initial_centers = k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized_matrix, initial_centers)
+            
+            # Check if they are the same 
             if previous_centers == initial_centers:
                 print("\nK-means clustering converged.")
                 break
+
+            # Check if the center has been seen before
             if previous_centers_tuple in seen_centers:
                 print("\nK-means clustering entered a loop. Stopping.")
                 break
+
+            # Add the previous centers to the seen set
             seen_centers.add(previous_centers_tuple)
             iteration += 1
             
+            # Increment counter 
             if iteration > 1000:
                 print("\nK-means clustering reached maximum iterations.")
                 break
       
-        
 if __name__ == "__main__":
     main()
     # testing
