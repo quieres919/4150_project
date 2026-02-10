@@ -412,6 +412,7 @@ def main():
         all_indices = list(hist1_np_indices_sorted)
         # Randomly select 3 intial centers from hist1_np_indices (163) 
         initial_centers = random.sample(all_indices, k)
+        # Make a list to store cluster assignments for each NP, initialized to 0
         cluster_assignments = np.zeros(len(all_indices), dtype=int)
 
         for i, np_idx in enumerate(all_indices):
@@ -441,7 +442,7 @@ def main():
             previous_centers = initial_centers.copy()
             previous_centers_tuple = tuple(previous_centers)
 
-            # Reassigm cluster assignmnets based on new centers
+            # Make a list to store cluster assignments for each NP, initialized to 0
             cluster_assignments = np.zeros(len(all_indices), dtype=int)
 
             # Calculate distance and assign to closest center for each NP
@@ -451,7 +452,7 @@ def main():
                 ]
                 cluster_assignments[idx] = np.argmin(distances)
             
-            # Reassign a new center 
+            # Looking through all indices and assigning their cluster to an array
             cluster1 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 0]
             cluster2 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 1]
             cluster3 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 2]
