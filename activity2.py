@@ -74,10 +74,12 @@ def main():
         window_coords = []
         #header
         window_np_presence = []
+        # Get first line
         header = f.readline().strip()
+        # Split header into columns
         columns = header.split()
 
-        # Columns 0,1,2 = chrom, start, stop
+        # Takes everything after chrom/start/stop as NP headers
         np_headers = columns[3:]
 
         # Count NP columns (those whose header contains "F")
@@ -85,7 +87,7 @@ def main():
         for h in np_headers:
             if "F" in h:
                 num_nps += 1
-
+        # Initialize variables for stats
         num_windows = 0
         windows_per_np = [0] * num_nps
         total_nps_per_window = 0
@@ -97,18 +99,23 @@ def main():
 
         #Now read the *data* lines
         for line in f:
+            # Break the line up
             line = line.strip()
             if not line:
                 continue
-
+            # Split the line into parts and check if it has enough columns (chrom, start, stop + NP values)
             parts = line.split()
             if len(parts) < 3 + num_nps:
                 # skip malformed line
                 continue
-
+            
+            # First column
             chrom = parts[0]
+            # Second column
             start = int(parts[1])
+            # Third column
             stop = int(parts[2])
+            # Store the window coordinates for later use
             window_coords.append((chrom, start, stop))
 
             num_windows += 1
@@ -120,17 +127,18 @@ def main():
 
             for idx in range(num_nps):
                 val = np_values[idx]
+                # Check for a 1 or 0 and store presence for this NP in this window
                 detected = is_present(val)
-                presence.append(detected)
-
+                presence.append(detected) # True if detected, False if not
+                # If detected, increment the count of windows for this NP and the count of NPs for this window
                 if detected:
                     windows_per_np[idx] += 1
                     nps_this_window += 1
-
-            window_np_presence.append(presence)
-
+    
+            window_np_presence.append(presence) # List of booleans indicating presence of each NP in this window    
+            
             total_nps_per_window += nps_this_window
-
+            # Assign min and max NPs per window for this window
             if min_nps_per_window is None or nps_this_window < min_nps_per_window:
                 min_nps_per_window = nps_this_window
             if nps_this_window > max_nps_per_window:
@@ -139,15 +147,17 @@ def main():
             # Store detection frequency for this window
             window_detection.append(nps_this_window / num_nps)
 
-        #Calculate detection frequency per NP
+        # Calculate detection frequency per NP (Windows per NP / Total Windows)
         detection_frequencies = [w / num_windows for w in windows_per_np]
         
-        #Calculate mean and solve for good threshhold for outliers
+        # Calculate mean and solve for good threshhold for outliers
         mean_freq = np.mean(detection_frequencies)
         std_freq = np.std(detection_frequencies)
         outlier_threshold = mean_freq + 2 * std_freq
         
-        #Calculate radial positions based on percentiles
+        # Assignment 2 - radial position and compaction estimates
+        # Calculate radial positions based on percentiles
+        # Store frequencies in an array for easier percentile calculations
         freqs = np.array(detection_frequencies)
         #The percentile finds the cutoffs for each radial position, IE: at what number is 20% of NPs below q20 and 80% above it
         # Low frequency = apical = low radial position
@@ -167,7 +177,7 @@ def main():
                 pos = 5
             radial_position.append(pos)
             
-        # Output results
+        # Output outliers based on detection frequency
         for idx, freq in enumerate(detection_frequencies):
             outlier_tag = "OUTLIER HIGH" if freq > outlier_threshold else ""
             #print only outliers
@@ -177,6 +187,7 @@ def main():
         window_array = np.array(window_detection)
         # Start finding the estimated compaction based on frequency (Basically inverse of radial position with more bins)
         # Lower frequency = higher compaction
+        # Opposite of radial position, but with 10 bins instead of 5
         l10,l20,l30,l40,l50,l60,l70,l80,l90 = np.percentile(window_array, [10,20,30,40,50,60,70,80,90])
 
         estimated_compaction = []
@@ -247,15 +258,17 @@ def main():
         nps_per_windows_hist1 = []
         # Analyze each window to see if it overlaps with Hist1 region
         for w_idx, (chrom, start, stop) in enumerate(window_coords):
-            # Check if its between start and stop 
+            # Check if its between start and stop and is right chromosome
             if chrom == hist1_chrom and not (stop < hist1_start or start > hist1_stop):
                 # Count windows overlapping Hist1 region
                 hist1_windows_indices.append(w_idx)
-                # Count Nps detecting Hist1 region / reset counter
+                # Count Nps detecting Hist1 region / reset counter for the window
                 nps_detecting = 0
+                # Go through ALL NPs and Check if they detected this window, if so add to the count for this window and add to the set of NPs that detected Hist1
                 for np_idx in range(num_nps):
-                    # Check if NP detected this window
+                    # Check if NP detected this window, w_idx = local, np_idx = global, but window_np_presence is global so we can check directly
                     if window_np_presence[w_idx][np_idx]:
+                        # Currently detected 
                         nps_detecting += 1
                         hist1_np_indices.add(np_idx)
                         windows_per_np_hist1[np_idx] += 1
@@ -266,6 +279,7 @@ def main():
         print("Number of Nps detecting Hist1:", len(hist1_np_indices))
         # Windows per NP
         print("Windows per NP:")
+        # Only consider NPs that detected at least 1 window for these stats
         nonzero_windows = [w for w in windows_per_np_hist1 if w > 0]
         print("Average windows per NP:", np.mean(nonzero_windows))
         print("Minimum windows in any NP:", min(nonzero_windows))
@@ -322,7 +336,7 @@ def main():
                 #print(f"Jaccard Distance between NP {np1+1} and NP {np2+1}: {jaccard_distance:.4f}")
                 jaccard_distance_matrix[np1][np2] = jaccard_distance
         
-        # Convert hist1_np_indices to a sorted list
+        # Convert hist1_np_indices to a sorted list for matrix 
         hist1_np_indices_sorted = sorted(hist1_np_indices)  # or sort by windows detected for trend
 
         # --- Similarity Heatmap ---
@@ -344,7 +358,7 @@ def main():
             "jaccard_distance_heatmap_hist1_test_function.png"
         )
 
-        ## Assignment 6: Clustering
+        # Assignment 6/7: Clustering
         # Normalize our matrices
         random_seeds = np.random.choice(hist1_np_indices, size=3, replace=False)
         # New arrays for normalized values
