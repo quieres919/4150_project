@@ -25,43 +25,33 @@ def generate_heatmap(data_matrix, title, xlabel, ylabel, filename):
     plt.savefig(filename)
     plt.close()
 
-def k_means_clustering(cluster1,cluster2,cluster3, jaccard_distance_normalized_matrix, initial_centers):
-    total_distances = []
+def k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized_matrix, initial_centers):
     new_centers = []
-    for cluster_np in cluster1:
-        total = sum (
-            jaccard_distance_normalized_matrix[cluster_np][other_np] for other_np in cluster1
-        )
-        total_distances.append(total)
-    minimum_distance = np.argmin(total_distances)
-    new_centers.append(cluster1[minimum_distance])
-    print("\nCluster 1 NP with minimum total distance to other NPs in cluster:", cluster1[minimum_distance])
 
-    total_distances = []
-    for cluster_np in cluster2:
-        minimum_distance = 0
-        total = sum (
-            jaccard_distance_normalized_matrix[cluster_np][other_np] for other_np in cluster2
-        )
-        total_distances.append(total)
-    minimum_distance = np.argmin(total_distances)
-    new_centers.append(cluster2[minimum_distance])
-    print("Cluster 2 NP with minimum total distance to other NPs in cluster:", cluster2[minimum_distance])
+    clusters = [cluster1, cluster2, cluster3]
 
+    for i, cluster in enumerate(clusters):
+        if len(cluster) == 0:
+            print(f"Cluster {i+1} is empty. Keeping previous center:", initial_centers[i])
+            new_centers.append(initial_centers[i])
+            continue
 
-    total_distances = []
-    for cluster_np in cluster3:
-        minimum_distance = 0
-        total = sum (
-            jaccard_distance_normalized_matrix[cluster_np][other_np] for other_np in cluster3
-        )
-        total_distances.append(total)
-    minimum_distance = np.argmin(total_distances)
-    new_centers.append(cluster3[minimum_distance])
-    print("Cluster 3 NP with minimum total distance to other NPs in cluster:", cluster3[minimum_distance])
+        total_distances = []
+        for cluster_np in cluster:
+            total = sum(
+                jaccard_distance_normalized_matrix[cluster_np][other_np]
+                for other_np in cluster
+            )
+            total_distances.append(total)
+
+        minimum_distance = np.argmin(total_distances)
+        new_centers.append(cluster[minimum_distance])
+
+        print(f"Cluster {i+1} new center:", cluster[minimum_distance])
 
     print("\nNew cluster centers after iteration:", new_centers)
     return new_centers
+
 
 def main():
     filename = "GSE64881_segmentation_at_30000bp.passqc.multibam (2).txt"
@@ -478,7 +468,27 @@ def main():
             if iteration > 1000:
                 print("\nK-means clustering reached maximum iterations.")
                 break
-      
+        
+        # Print final cluster centers and their NP members
+        print("\n=== FINAL CLUSTERING RESULTS ===")
+        print("\nFinal cluster centers:", initial_centers)
+        print("\nFinal Cluster 1 NPs:", cluster1)
+        print("\nFinal Cluster 2 NPs:", cluster2)
+        print("\nFinal Cluster 3 NPs:", cluster3)
+
+        variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1) / len(cluster1) if len(cluster1) > 0 else 0
+        variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2) / len(cluster2) if len(cluster2) > 0 else 0
+        variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3) / len(cluster3) if len(cluster3) > 0 else 0
+
+        total_variation = variation1 + variation2 + variation3
+
+        print("\nCluster 1 variation:", variation1)
+        print("Cluster 2 variation:", variation2)
+        print("Cluster 3 variation:", variation3)
+        print("Total within-cluster variation:", total_variation)
+
+
+        
 if __name__ == "__main__":
     main()
     # testing
