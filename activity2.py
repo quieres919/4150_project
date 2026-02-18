@@ -26,7 +26,6 @@ def generate_heatmap(data_matrix, title, xlabel, ylabel, filename):
     plt.close()
 
 
-
 def k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized_matrix, initial_centers):
     new_centers = []
 
@@ -34,7 +33,7 @@ def k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized
 
     for i, cluster in enumerate(clusters):
         if len(cluster) == 0:
-            print(f"Cluster {i+1} is empty. Keeping previous center:", initial_centers[i])
+            #print(f"Cluster {i+1} is empty. Keeping previous center:", initial_centers[i])
             new_centers.append(initial_centers[i])
             continue
 
@@ -82,12 +81,12 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
             
         # Check if they are the same 
         if previous_centers == initial_centers:
-            print("\nK-medoids clustering converged.")
+            #print("\nK-medoids clustering converged.")
             break
 
         # Check if the center has been seen before
         if previous_centers_tuple in seen_centers:
-            print("\nK-medoids clustering entered a loop. Stopping.")
+            #print("\nK-medoids clustering entered a loop. Stopping.")
             break
 
         # Add the previous centers to the seen set
@@ -96,7 +95,7 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
             
         # Increment counter 
         if iteration > 1000:
-            print("\nK-medoids clustering reached maximum iterations.")
+            #print("\nK-medoids clustering reached maximum iterations.")
             break
         
         # Print final cluster centers and their NP members
@@ -125,7 +124,7 @@ def main():
         # Store coords in list for later use
         window_coords = []
         #header
-        window_np_presence = []
+        window_np_presence = [] 
         # Get first line
         header = f.readline().strip()
         # Split header into columns
@@ -478,9 +477,9 @@ def main():
             # Assign to the cluster with the minimum distance 
             cluster_assignments[i] = np.argmin(distances)
 
-        print("\n=== K-MEANS CLUSTERING RESULTS ===")
-        print("\nInitial cluster centers:", initial_centers)
-        print("Num clusters assigned:", np.bincount(cluster_assignments))
+        #print("\n=== K-MEANS CLUSTERING RESULTS ===")
+        #print("\Initial cluster centers:", initial_centers)
+        #print("Num clusters assigned:", np.bincount(cluster_assignments))
         # Looking through all indices and assigning their cluster to an array 
         cluster1 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 0]
         cluster2 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 1]
@@ -488,26 +487,27 @@ def main():
         #print("\nCluster 1 initial value:", initial_centers[0], "Number of cluster 1 NPs:", len(cluster1), "Cluster 1 NPs:", cluster1)
         #print("\nCluster 2 initial value:", initial_centers[1], "Number of cluster 2 NPs:", len(cluster2), "Cluster 2 NPs:", cluster2)
         #print("\nCluster 3 initial value:", initial_centers[2], "Number of cluster 3 NPs:", len(cluster3), "Cluster 3 NPs:", cluster3)
-        # Find the min distance between each NP in cluster from the Center NP
-        # Do this until the centers don't change 
-        # Get new random center
-        
+
+        # FEATURE SELECTION ACTIVITY 1 
         best_variation = float("inf")
         best_result = None
 
+        # Run k-medoids multiple times and keep the best result
         for run in range(1000): 
+            # New random centers for each run to find the best clustering result
             initial_centers = random.sample(all_indices, k)
-
+            
             centers, cluster1, cluster2, cluster3, variation = k_medoids(
                 all_indices,
                 jaccard_distance_normalized_matrix,
                 initial_centers
             )
 
-            print(f"\nRun {run+1}")
-            print("Centers:", centers)
-            print("Variation:", variation)
+            #print(f"\nRun {run+1}")
+            #print("Centers:", centers)
+            #print("Variation:", variation)
 
+            # Keep track of the best variation and corresponding centers and clusters
             if variation < best_variation:
                 best_variation = variation
                 best_result = (centers, cluster1, cluster2, cluster3)
@@ -516,7 +516,12 @@ def main():
         print("Best variation:", best_variation)
         print("Best centers:", best_result[0])
 
-
+        # Create a heatmap for the best set of clusters, Rows = NPs, Columns = Centers, Cells = values from seg table (0 or 1)
+        # Create a matrix to represent the heatmap data
+        
+        #generate_cluster_heatmap(best_result[1], window_np_presence, "Cluster 1")
+        #generate_cluster_heatmap(best_result[2], window_np_presence, "Cluster 2")
+        #generate_cluster_heatmap(best_result[3], window_np_presence, "Cluster 3")
 if __name__ == "__main__":
     main()
     # testing
