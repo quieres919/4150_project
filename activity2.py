@@ -25,6 +25,8 @@ def generate_heatmap(data_matrix, title, xlabel, ylabel, filename):
     plt.savefig(filename)
     plt.close()
 
+
+
 def k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized_matrix, initial_centers):
     new_centers = []
 
@@ -47,10 +49,73 @@ def k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized
         minimum_distance = np.argmin(total_distances)
         new_centers.append(cluster[minimum_distance])
 
-        print(f"Cluster {i+1} new center:", cluster[minimum_distance])
+        #print(f"Cluster {i+1} new center:", cluster[minimum_distance])
 
-    print("\nNew cluster centers after iteration:", new_centers)
+    #print("\nNew cluster centers after iteration:", new_centers)
     return new_centers
+
+def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
+    iteration = 0
+    seen_centers = set()
+    while(True):
+        # Assign previous centers to compare to new centers after reassignment
+        previous_centers = initial_centers.copy()
+        previous_centers_tuple = tuple(previous_centers)
+
+        # Make a list to store cluster assignments for each NP, initialized to 0
+        cluster_assignments = np.zeros(len(all_indices), dtype=int)
+
+        # Calculate distance and assign to closest center for each NP
+        for idx, np_idx in enumerate(all_indices):
+            distances = [
+                jaccard_distance_normalized_matrix[np_idx][center] for center in initial_centers
+            ]
+            cluster_assignments[idx] = np.argmin(distances)
+            
+        # Looking through all indices and assigning their cluster to an array
+        cluster1 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 0]
+        cluster2 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 1]
+        cluster3 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 2]
+
+        # Reassign centers 
+        initial_centers = k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized_matrix, initial_centers)
+            
+        # Check if they are the same 
+        if previous_centers == initial_centers:
+            print("\nK-medoids clustering converged.")
+            break
+
+        # Check if the center has been seen before
+        if previous_centers_tuple in seen_centers:
+            print("\nK-medoids clustering entered a loop. Stopping.")
+            break
+
+        # Add the previous centers to the seen set
+        seen_centers.add(previous_centers_tuple)
+        iteration += 1
+            
+        # Increment counter 
+        if iteration > 1000:
+            print("\nK-medoids clustering reached maximum iterations.")
+            break
+        
+        # Print final cluster centers and their NP members
+        #print("\n=== FINAL CLUSTERING RESULTS ===")
+        #print("\nFinal cluster centers:", initial_centers)
+        #print("\nFinal Cluster 1 NPs:", cluster1)
+        #print("\nFinal Cluster 2 NPs:", cluster2)
+        #print("\nFinal Cluster 3 NPs:", cluster3)
+
+        variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1) / len(cluster1) if len(cluster1) > 0 else 0
+        variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2) / len(cluster2) if len(cluster2) > 0 else 0
+        variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3) / len(cluster3) if len(cluster3) > 0 else 0
+        total_variation = variation1 + variation2 + variation3
+        return initial_centers, cluster1, cluster2, cluster3, total_variation
+
+        #print("\nCluster 1 variation:", variation1)
+        #print("Cluster 2 variation:", variation2)
+        #print("Cluster 3 variation:", variation3)
+        #print("Total within-cluster variation:", total_variation)
 
 
 def main():
@@ -420,75 +485,38 @@ def main():
         cluster1 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 0]
         cluster2 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 1]
         cluster3 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 2]
-        print("\nCluster 1 initial value:", initial_centers[0], "Number of cluster 1 NPs:", len(cluster1), "Cluster 1 NPs:", cluster1)
-        print("\nCluster 2 initial value:", initial_centers[1], "Number of cluster 2 NPs:", len(cluster2), "Cluster 2 NPs:", cluster2)
-        print("\nCluster 3 initial value:", initial_centers[2], "Number of cluster 3 NPs:", len(cluster3), "Cluster 3 NPs:", cluster3)
+        #print("\nCluster 1 initial value:", initial_centers[0], "Number of cluster 1 NPs:", len(cluster1), "Cluster 1 NPs:", cluster1)
+        #print("\nCluster 2 initial value:", initial_centers[1], "Number of cluster 2 NPs:", len(cluster2), "Cluster 2 NPs:", cluster2)
+        #print("\nCluster 3 initial value:", initial_centers[2], "Number of cluster 3 NPs:", len(cluster3), "Cluster 3 NPs:", cluster3)
         # Find the min distance between each NP in cluster from the Center NP
         # Do this until the centers don't change 
-        iteration = 0
-        seen_centers = set()
-        while(True):
-            # Assign previous centers to compare to new centers after reassignment
-            previous_centers = initial_centers.copy()
-            previous_centers_tuple = tuple(previous_centers)
-
-            # Make a list to store cluster assignments for each NP, initialized to 0
-            cluster_assignments = np.zeros(len(all_indices), dtype=int)
-
-            # Calculate distance and assign to closest center for each NP
-            for idx, np_idx in enumerate(all_indices):
-                distances = [
-                    jaccard_distance_normalized_matrix[np_idx][center] for center in initial_centers
-                ]
-                cluster_assignments[idx] = np.argmin(distances)
-            
-            # Looking through all indices and assigning their cluster to an array
-            cluster1 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 0]
-            cluster2 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 1]
-            cluster3 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 2]
-
-            # Reassign centers 
-            initial_centers = k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized_matrix, initial_centers)
-            
-            # Check if they are the same 
-            if previous_centers == initial_centers:
-                print("\nK-means clustering converged.")
-                break
-
-            # Check if the center has been seen before
-            if previous_centers_tuple in seen_centers:
-                print("\nK-means clustering entered a loop. Stopping.")
-                break
-
-            # Add the previous centers to the seen set
-            seen_centers.add(previous_centers_tuple)
-            iteration += 1
-            
-            # Increment counter 
-            if iteration > 1000:
-                print("\nK-means clustering reached maximum iterations.")
-                break
+        # Get new random center
         
-        # Print final cluster centers and their NP members
-        print("\n=== FINAL CLUSTERING RESULTS ===")
-        print("\nFinal cluster centers:", initial_centers)
-        print("\nFinal Cluster 1 NPs:", cluster1)
-        print("\nFinal Cluster 2 NPs:", cluster2)
-        print("\nFinal Cluster 3 NPs:", cluster3)
+        best_variation = float("inf")
+        best_result = None
 
-        variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1) / len(cluster1) if len(cluster1) > 0 else 0
-        variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2) / len(cluster2) if len(cluster2) > 0 else 0
-        variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3) / len(cluster3) if len(cluster3) > 0 else 0
+        for run in range(1000): 
+            initial_centers = random.sample(all_indices, k)
 
-        total_variation = variation1 + variation2 + variation3
+            centers, cluster1, cluster2, cluster3, variation = k_medoids(
+                all_indices,
+                jaccard_distance_normalized_matrix,
+                initial_centers
+            )
 
-        print("\nCluster 1 variation:", variation1)
-        print("Cluster 2 variation:", variation2)
-        print("Cluster 3 variation:", variation3)
-        print("Total within-cluster variation:", total_variation)
+            print(f"\nRun {run+1}")
+            print("Centers:", centers)
+            print("Variation:", variation)
+
+            if variation < best_variation:
+                best_variation = variation
+                best_result = (centers, cluster1, cluster2, cluster3)
+
+        print("\n=== BEST OVER ALL RUNS ===")
+        print("Best variation:", best_variation)
+        print("Best centers:", best_result[0])
 
 
-        
 if __name__ == "__main__":
     main()
     # testing
