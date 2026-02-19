@@ -25,36 +25,37 @@ def generate_heatmap(data_matrix, title, xlabel, ylabel, filename):
     plt.savefig(filename)
     plt.close()
 
-def generate_cluster_heatmap(cluster_np_indices, window_np_presence, window_indices, title, filename):
-    """
-    Rows = NPs in cluster
-    Columns = genomic windows (e.g., Hist1 windows)
-    Cells = segregation value (0/1)
-    """
-    if len(cluster_np_indices) == 0 or len(window_indices) == 0:
-        print(f"Skipping {title}: empty cluster or no windows.")
-        return
+def generate_cluster_heatmap_full(cluster_np_indices,window_np_presence,hist1_window_indices,title,filename):
+    
+    num_nps = len(window_np_presence[0])
 
-    # Build matrix: shape = (num_cluster_nps, num_windows)
-    heatmap_data = np.array([
-        [1 if window_np_presence[w_idx][np_idx] else 0 for w_idx in window_indices]
-        for np_idx in cluster_np_indices
+    # Build full matrix: ALL NPs × ALL Hist1 windows
+    full_matrix = np.array([
+        [1 if window_np_presence[w][np_idx] else 0 for w in hist1_window_indices]
+        for np_idx in range(num_nps)
     ], dtype=int)
 
-    plt.figure(figsize=(14, 6))
-    ax = sns.heatmap(
-        heatmap_data,
-        cmap="Greys",
-        cbar=True,
-        vmin=0,
-        vmax=1,
-        yticklabels=[f"NP{np_idx+1}" for np_idx in cluster_np_indices],
-        xticklabels=False
-    )
+    # Reorder rows: cluster NPs first
+    cluster_np_indices_sorted = sorted(cluster_np_indices)
+    other_nps = [i for i in range(num_nps) if i not in cluster_np_indices_sorted]
+    row_order = cluster_np_indices_sorted + other_nps
+
+    full_matrix = full_matrix[row_order]
+
+    # Build labels
+    row_labels = [f"NP{idx+1}" for idx in row_order]
+    col_labels = [f"W{i}" for i in range(len(hist1_window_indices))]
+
+    df = pd.DataFrame(full_matrix, index=row_labels, columns=col_labels)
+
+    # Plot
+    plt.figure(figsize=(14, 10))
+    ax = sns.heatmap(df, cmap="Greys", cbar=True, vmin=0, vmax=1)
 
     ax.set_title(title)
-    ax.set_xlabel("Genomic windows")
-    ax.set_ylabel("NPs")
+    ax.set_xlabel("Hist1 windows")
+    ax.set_ylabel("All NPs")
+
     plt.tight_layout()
     plt.savefig(filename, dpi=300)
     plt.close()
@@ -141,7 +142,7 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
     variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1) / len(cluster1) if len(cluster1) > 0 else 0
     variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2) / len(cluster2) if len(cluster2) > 0 else 0
     variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3) / len(cluster3) if len(cluster3) > 0 else 0
-    total_variation = variation1 + variation2 + variation3 / 3
+    total_variation = (variation1 + variation2 + variation3) / 3
     return initial_centers, cluster1, cluster2, cluster3, total_variation
 
         #print("\nCluster 1 variation:", variation1)
@@ -549,31 +550,30 @@ def main():
         print("\n=== BEST OVER ALL RUNS ===")
         print("Best variation:", best_variation)
         print("Best centers:", best_result[0])
-
         # Create a heatmap for the best set of clusters, Rows = NPs, Columns = Centers, Cells = values from seg table (0 or 1)
         # Create a matrix to represent the heatmap data
-
-        print("Generating heatmaps for best clusters...")
-        generate_cluster_heatmap(
+        generate_cluster_heatmap_full(
             best_result[1],
             window_np_presence,
             hist1_windows_indices,
-            "Best Cluster 1 Heatmap (NP x Window)",
-            "best_cluster1_heatmap.png"
-        )       
-        generate_cluster_heatmap(
+            "Cluster Heatmap for cluster 1 NPs (Best K-Medoids Result)",
+            "cluster_heatmap_1.png"
+        )
+
+        generate_cluster_heatmap_full(
             best_result[2],
             window_np_presence,
             hist1_windows_indices,
-            "Best Cluster 2 Heatmap (NP x Window)",
-            "best_cluster2_heatmap.png"
+            "Cluster Heatmap for cluster 2 NPs (Best K-Medoids Result)",
+            "cluster_heatmap_2.png"
         )
-        generate_cluster_heatmap(
+
+        generate_cluster_heatmap_full(
             best_result[3],
             window_np_presence,
             hist1_windows_indices,
-            "Best Cluster 3 Heatmap (NP x Window)",
-            "best_cluster3_heatmap.png"
+            "Cluster Heatmap for cluster 3 NPs (Best K-Medoids Result)",
+            "cluster_heatmap_3.png"
         )
 
 if __name__ == "__main__":
