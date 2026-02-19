@@ -142,7 +142,7 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
     variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1) / len(cluster1) if len(cluster1) > 0 else 0
     variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2) / len(cluster2) if len(cluster2) > 0 else 0
     variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3) / len(cluster3) if len(cluster3) > 0 else 0
-    total_variation = (variation1 + variation2 + variation3) / 3
+    total_variation = variation1 + variation2 + variation3
     return initial_centers, cluster1, cluster2, cluster3, total_variation
 
         #print("\nCluster 1 variation:", variation1)
@@ -523,7 +523,7 @@ def main():
         #print("\nCluster 1 initial value:", initial_centers[0], "Number of cluster 1 NPs:", len(cluster1), "Cluster 1 NPs:", cluster1)
         #print("\nCluster 2 initial value:", initial_centers[1], "Number of cluster 2 NPs:", len(cluster2), "Cluster 2 NPs:", cluster2)
         #print("\nCluster 3 initial value:", initial_centers[2], "Number of cluster 3 NPs:", len(cluster3), "Cluster 3 NPs:", cluster3)
-
+        print("\nOriginal cluster lengths:", len(cluster1), len(cluster2), len(cluster3))
         # FEATURE SELECTION ACTIVITY 1 
         best_variation = float("inf")
         best_result = None
@@ -550,6 +550,9 @@ def main():
         print("\n=== BEST OVER ALL RUNS ===")
         print("Best variation:", best_variation)
         print("Best centers:", best_result[0])
+        print("Length cluster 1:", len(best_result[1]))
+        print("Length cluster 2:", len(best_result[2]))
+        print("Length cluster 3:", len(best_result[3]))
         # Create a heatmap for the best set of clusters, Rows = NPs, Columns = Centers, Cells = values from seg table (0 or 1)
         # Create a matrix to represent the heatmap data
         generate_cluster_heatmap_full(
