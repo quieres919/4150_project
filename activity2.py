@@ -25,6 +25,39 @@ def generate_heatmap(data_matrix, title, xlabel, ylabel, filename):
     plt.savefig(filename)
     plt.close()
 
+def generate_cluster_heatmap(cluster_np_indices, window_np_presence, window_indices, title, filename):
+    """
+    Rows = NPs in cluster
+    Columns = genomic windows (e.g., Hist1 windows)
+    Cells = segregation value (0/1)
+    """
+    if len(cluster_np_indices) == 0 or len(window_indices) == 0:
+        print(f"Skipping {title}: empty cluster or no windows.")
+        return
+
+    # Build matrix: shape = (num_cluster_nps, num_windows)
+    heatmap_data = np.array([
+        [1 if window_np_presence[w_idx][np_idx] else 0 for w_idx in window_indices]
+        for np_idx in cluster_np_indices
+    ], dtype=int)
+
+    plt.figure(figsize=(14, 6))
+    ax = sns.heatmap(
+        heatmap_data,
+        cmap="Greys",
+        cbar=True,
+        vmin=0,
+        vmax=1,
+        yticklabels=[f"NP{np_idx+1}" for np_idx in cluster_np_indices],
+        xticklabels=False
+    )
+
+    ax.set_title(title)
+    ax.set_xlabel("Genomic windows")
+    ax.set_ylabel("NPs")
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300)
+    plt.close()
 
 def k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized_matrix, initial_centers):
     new_centers = []
@@ -105,11 +138,11 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         #print("\nFinal Cluster 2 NPs:", cluster2)
         #print("\nFinal Cluster 3 NPs:", cluster3)
 
-        variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1) / len(cluster1) if len(cluster1) > 0 else 0
-        variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2) / len(cluster2) if len(cluster2) > 0 else 0
-        variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3) / len(cluster3) if len(cluster3) > 0 else 0
-        total_variation = variation1 + variation2 + variation3
-        return initial_centers, cluster1, cluster2, cluster3, total_variation
+    variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1) / len(cluster1) if len(cluster1) > 0 else 0
+    variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2) / len(cluster2) if len(cluster2) > 0 else 0
+    variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3) / len(cluster3) if len(cluster3) > 0 else 0
+    total_variation = variation1 + variation2 + variation3 / 3
+    return initial_centers, cluster1, cluster2, cluster3, total_variation
 
         #print("\nCluster 1 variation:", variation1)
         #print("Cluster 2 variation:", variation2)
@@ -437,10 +470,12 @@ def main():
                 # Jaccard similarity normalized
                 jaccard_similarity_normalized = intersection / min(A_union, B_union) if min(A_union, B_union) > 0 else 0
                 jaccard_similarity_normalized_matrix[np1][np2] = jaccard_similarity_normalized
+                jaccard_similarity_normalized_matrix[np2][np1] = jaccard_similarity_normalized
                
                 # Jaccard distance normalized 
                 jaccard_distance_normalized = 1 - jaccard_similarity_normalized
                 jaccard_distance_normalized_matrix[np1][np2] = jaccard_distance_normalized
+                jaccard_distance_normalized_matrix[np2][np1] = jaccard_distance_normalized
               
         # Heatmap for normalized similarity matrix
         sim_norm_subset = jaccard_similarity_normalized_matrix[np.ix_(hist1_np_indices_sorted, hist1_np_indices_sorted)].copy()
@@ -491,7 +526,6 @@ def main():
         # FEATURE SELECTION ACTIVITY 1 
         best_variation = float("inf")
         best_result = None
-
         # Run k-medoids multiple times and keep the best result
         for run in range(1000): 
             # New random centers for each run to find the best clustering result
@@ -518,10 +552,30 @@ def main():
 
         # Create a heatmap for the best set of clusters, Rows = NPs, Columns = Centers, Cells = values from seg table (0 or 1)
         # Create a matrix to represent the heatmap data
-        
-        #generate_cluster_heatmap(best_result[1], window_np_presence, "Cluster 1")
-        #generate_cluster_heatmap(best_result[2], window_np_presence, "Cluster 2")
-        #generate_cluster_heatmap(best_result[3], window_np_presence, "Cluster 3")
+
+        print("Generating heatmaps for best clusters...")
+        generate_cluster_heatmap(
+            best_result[1],
+            window_np_presence,
+            hist1_windows_indices,
+            "Best Cluster 1 Heatmap (NP x Window)",
+            "best_cluster1_heatmap.png"
+        )       
+        generate_cluster_heatmap(
+            best_result[2],
+            window_np_presence,
+            hist1_windows_indices,
+            "Best Cluster 2 Heatmap (NP x Window)",
+            "best_cluster2_heatmap.png"
+        )
+        generate_cluster_heatmap(
+            best_result[3],
+            window_np_presence,
+            hist1_windows_indices,
+            "Best Cluster 3 Heatmap (NP x Window)",
+            "best_cluster3_heatmap.png"
+        )
+
 if __name__ == "__main__":
     main()
     # testing
