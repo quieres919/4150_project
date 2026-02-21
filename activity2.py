@@ -25,36 +25,35 @@ def generate_heatmap(data_matrix, title, xlabel, ylabel, filename):
     plt.savefig(filename)
     plt.close()
 
-def generate_cluster_heatmap_full(cluster_np_indices,window_np_presence,hist1_window_indices,title,filename):
-    
-    num_nps = len(window_np_presence[0])
+# Need to change this function to only print the clusters instead of all NPs
+def generate_cluster_heatmap_full(cluster_np_indices, window_np_presence, hist1_window_indices, title, filename):
 
-    # Build full matrix: ALL NPs × ALL Hist1 windows
-    full_matrix = np.array([
+    if len(cluster_np_indices) == 0:
+        print("Cluster is empty. Skipping heatmap.")
+        return
+
+    # Sort cluster indices for cleaner visualization
+    cluster_np_indices_sorted = sorted(cluster_np_indices)
+
+    # Build matrix: cluster NPs × Hist1 windows
+    cluster_matrix = np.array([
         [1 if window_np_presence[w][np_idx] else 0 for w in hist1_window_indices]
-        for np_idx in range(num_nps)
+        for np_idx in cluster_np_indices_sorted
     ], dtype=int)
 
-    # Reorder rows: cluster NPs first
-    cluster_np_indices_sorted = sorted(cluster_np_indices)
-    other_nps = [i for i in range(num_nps) if i not in cluster_np_indices_sorted]
-    row_order = cluster_np_indices_sorted + other_nps
-
-    full_matrix = full_matrix[row_order]
-
-    # Build labels
-    row_labels = [f"NP{idx+1}" for idx in row_order]
+    # Create labels
+    row_labels = [f"NP{idx+1}" for idx in cluster_np_indices_sorted]
     col_labels = [f"W{i}" for i in range(len(hist1_window_indices))]
 
-    df = pd.DataFrame(full_matrix, index=row_labels, columns=col_labels)
+    df = pd.DataFrame(cluster_matrix, index=row_labels, columns=col_labels)
 
-    # Plot
+    # Plot heatmap
     plt.figure(figsize=(14, 10))
     ax = sns.heatmap(df, cmap="Greys", cbar=True, vmin=0, vmax=1)
 
     ax.set_title(title)
     ax.set_xlabel("Hist1 windows")
-    ax.set_ylabel("All NPs")
+    ax.set_ylabel("Cluster NPs")
 
     plt.tight_layout()
     plt.savefig(filename, dpi=300)
@@ -138,11 +137,11 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         #print("\nFinal Cluster 1 NPs:", cluster1)
         #print("\nFinal Cluster 2 NPs:", cluster2)
         #print("\nFinal Cluster 3 NPs:", cluster3)
-
-    variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1) / len(cluster1) if len(cluster1) > 0 else 0
-    variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2) / len(cluster2) if len(cluster2) > 0 else 0
-    variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3) / len(cluster3) if len(cluster3) > 0 else 0
-    total_variation = variation1 + variation2 + variation3
+    variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1)
+    variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2)
+    variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3)
+    
+    total_variation = (variation1 + variation2 + variation3) 
     return initial_centers, cluster1, cluster2, cluster3, total_variation
 
         #print("\nCluster 1 variation:", variation1)
@@ -150,11 +149,46 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         #print("Cluster 3 variation:", variation3)
         #print("Total within-cluster variation:", total_variation)
 
+def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indices, hist1_features, lad_features):
+
+    hist1_percentages = []
+    lad_percentages = []
+    # Num NPs in Cluster
+    for np_idx in cluster:
+        # Initialize 
+        total_detected = 0
+        hist1_count = 0
+        lad_count = 0
+
+        # iterate only over Hist1 windows, Local I to avoid issues 
+        for local_i, w_idx in enumerate(hist1_windows_indices):
+            
+            if window_np_presence[w_idx][np_idx]:
+                # Count number of windows detected in Hist1 region for this NP, and how many of those windows have the feature
+                total_detected += 1
+
+                # If the feature is present in this window, increment the count for that feature for this NP
+                if hist1_features[local_i] == 1:
+                    hist1_count += 1
+
+                if lad_features[local_i] == 1:
+                    lad_count += 1
+        # Calculate percentages 
+        if total_detected > 0:
+            hist1_percentages.append(hist1_count / total_detected)
+            lad_percentages.append(lad_count / total_detected)
+        else:
+            hist1_percentages.append(0)
+            lad_percentages.append(0)
+
+    return hist1_percentages, lad_percentages
 
 def main():
     filename = "GSE64881_segmentation_at_30000bp.passqc.multibam (2).txt"
+    filename2 = "Hist1_region_features.csv"
 
     with open(filename, "r") as f:
+
         # Store coords in list for later use
         window_coords = []
         #header
@@ -467,9 +501,9 @@ def main():
                 A_union = len(windows_np1)
            
                 B_union = len(windows_np2)
-            
+                ab_union = min(A_union, B_union)
                 # Jaccard similarity normalized
-                jaccard_similarity_normalized = intersection / min(A_union, B_union) if min(A_union, B_union) > 0 else 0
+                jaccard_similarity_normalized = intersection / ab_union if union > 0 else 0
                 jaccard_similarity_normalized_matrix[np1][np2] = jaccard_similarity_normalized
                 jaccard_similarity_normalized_matrix[np2][np1] = jaccard_similarity_normalized
                
@@ -550,9 +584,6 @@ def main():
         print("\n=== BEST OVER ALL RUNS ===")
         print("Best variation:", best_variation)
         print("Best centers:", best_result[0])
-        print("Length cluster 1:", len(best_result[1]))
-        print("Length cluster 2:", len(best_result[2]))
-        print("Length cluster 3:", len(best_result[3]))
         # Create a heatmap for the best set of clusters, Rows = NPs, Columns = Centers, Cells = values from seg table (0 or 1)
         # Create a matrix to represent the heatmap data
         generate_cluster_heatmap_full(
@@ -579,6 +610,59 @@ def main():
             "cluster_heatmap_3.png"
         )
 
+        print("\nCluster 1 NPs:", best_result[1])
+        print("Cluster 2 NPs:", best_result[2])
+        print("Cluster 3 NPs:", best_result[3])
+
+        print("\n Final cluster lengths", len(best_result[1]), len(best_result[2]), len(best_result[3]))
+        
+        # FEATURE SELECTION ACTIVITY 2 
+        df = pd.read_csv("Hist1_region_features.csv")
+        # Extract Hist1 and Lad from file 
+        hist1_features = df["Hist1"].astype(int).tolist()
+        lad_features = df["LAD"].astype(int).tolist()
+
+        
+        # Call function to compute percentages for each cluster and print results
+        cluster1_hist1, cluster1_lad = compute_feature_percentages(
+            best_result[1],
+            window_np_presence,
+            hist1_windows_indices,
+            hist1_features,
+            lad_features
+        )
+        # Print the percentages list for each cluster and feature
+        cluster1_hist1_avg = np.mean(cluster1_hist1) if cluster1_hist1 else 0
+        cluster1_lad_avg = np.mean(cluster1_lad) if cluster1_lad else 0
+        print ("\nCluster 1 Hist1 percentages:", cluster1_hist1_avg)
+        print ("\nCluster 1 LAD percentages:", cluster1_lad_avg)
+
+        cluster2_hist1, cluster2_lad = compute_feature_percentages(
+            best_result[2],
+            window_np_presence,
+            hist1_windows_indices,
+            hist1_features,
+            lad_features
+        )
+        cluster2_hist1_avg = np.mean(cluster2_hist1) if cluster2_hist1 else 0
+        cluster2_lad_avg = np.mean(cluster2_lad) if cluster2_lad else 0
+        print ("\nCluster 2 Hist1 percentages:", cluster2_hist1_avg)
+        print ("\nCluster 2 LAD percentages:", cluster2_lad_avg)
+
+        cluster3_hist1, cluster3_lad = compute_feature_percentages(
+            best_result[3],
+            window_np_presence,
+            hist1_windows_indices,
+            hist1_features,
+            lad_features
+        )
+        cluster3_hist1_avg = np.mean(cluster3_hist1) if cluster3_hist1 else 0
+        cluster3_lad_avg = np.mean(cluster3_lad) if cluster3_lad else 0
+        print ("\nCluster 3 Hist1 percentages:", cluster3_hist1_avg)
+        print ("\nCluster 3 LAD percentages:", cluster3_lad_avg)
+                    
+
+        
 if __name__ == "__main__":
     main()
     # testing
