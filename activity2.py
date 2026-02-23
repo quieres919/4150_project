@@ -454,6 +454,7 @@ def main():
                 jaccard_distance = 1 - jaccard_index
                 #print(f"Jaccard Distance between NP {np1+1} and NP {np2+1}: {jaccard_distance:.4f}")
                 jaccard_distance_matrix[np1][np2] = jaccard_distance
+                jaccard_distance_matrix[np2][np1] = jaccard_distance
         
         # Convert hist1_np_indices to a sorted list for matrix 
         hist1_np_indices_sorted = sorted(hist1_np_indices)  # or sort by windows detected for trend
@@ -503,7 +504,10 @@ def main():
                 B_union = len(windows_np2)
                 ab_union = min(A_union, B_union)
                 # Jaccard similarity normalized
-                jaccard_similarity_normalized = intersection / ab_union if union > 0 else 0
+                if ab_union > 0:
+                    jaccard_similarity_normalized = intersection/ab_union
+                else:
+                    jaccard_similarity_normalized = 0
                 jaccard_similarity_normalized_matrix[np1][np2] = jaccard_similarity_normalized
                 jaccard_similarity_normalized_matrix[np2][np1] = jaccard_similarity_normalized
                
@@ -542,7 +546,7 @@ def main():
         for i, np_idx in enumerate(all_indices):
             distances = [
                 # Use normalized distance to assign clusters (distance from center in that matrix)
-                jaccard_distance_normalized_matrix[np_idx][center] for center in initial_centers
+                jaccard_distance_matrix[np_idx][center] for center in initial_centers
             ]
             # Assign to the cluster with the minimum distance 
             cluster_assignments[i] = np.argmin(distances)
@@ -568,7 +572,7 @@ def main():
             
             centers, cluster1, cluster2, cluster3, variation = k_medoids(
                 all_indices,
-                jaccard_distance_normalized_matrix,
+                jaccard_distance_matrix,
                 initial_centers
             )
 
@@ -635,7 +639,7 @@ def main():
         cluster1_hist1_avg = np.mean(cluster1_hist1) if cluster1_hist1 else 0
         cluster1_lad_avg = np.mean(cluster1_lad) if cluster1_lad else 0
         print ("\nCluster 1 Hist1 percentages:", cluster1_hist1_avg)
-        print ("\nCluster 1 LAD percentages:", cluster1_lad_avg)
+        print ("Cluster 1 LAD percentages:", cluster1_lad_avg)
 
         cluster2_hist1, cluster2_lad = compute_feature_percentages(
             best_result[2],
@@ -647,7 +651,7 @@ def main():
         cluster2_hist1_avg = np.mean(cluster2_hist1) if cluster2_hist1 else 0
         cluster2_lad_avg = np.mean(cluster2_lad) if cluster2_lad else 0
         print ("\nCluster 2 Hist1 percentages:", cluster2_hist1_avg)
-        print ("\nCluster 2 LAD percentages:", cluster2_lad_avg)
+        print ("Cluster 2 LAD percentages:", cluster2_lad_avg)
 
         cluster3_hist1, cluster3_lad = compute_feature_percentages(
             best_result[3],
@@ -659,9 +663,41 @@ def main():
         cluster3_hist1_avg = np.mean(cluster3_hist1) if cluster3_hist1 else 0
         cluster3_lad_avg = np.mean(cluster3_lad) if cluster3_lad else 0
         print ("\nCluster 3 Hist1 percentages:", cluster3_hist1_avg)
-        print ("\nCluster 3 LAD percentages:", cluster3_lad_avg)
+        print ("Cluster 3 LAD percentages:", cluster3_lad_avg)
                     
+        # Make a Boxplot for Hist 1
+        hist1_data = (
+            [(val, "Cluster 1") for val in cluster1_hist1] +
+            [(val, "Cluster 2") for val in cluster2_hist1] +
+            [(val, "Cluster 3") for val in cluster3_hist1]
+        )
+        hist1_df = pd.DataFrame(hist1_data, columns=["Percentage", "Cluster"])
+        plt.figure(figsize=(8, 6))
+        sns.boxplot(x="Cluster", y="Percentage", data=hist1_df)
+        sns.stripplot(x = "Cluster", y = "Percentage", data = hist1_df, color = "black", alpha = 0.5)
+        plt.title("Distribution of Hist1 Feature Percentages by Cluster")
+        plt.xlabel("Cluster")
+        plt.ylabel("Percentage of Hist1 Windows Detected")
+        plt.tight_layout()
+        plt.savefig("hist1_feature_percentages_boxplot.png")
+        plt.close()
 
+        # Make a Boxplot for LAD
+        lad_data = (
+            [(val, "Cluster 1") for val in cluster1_lad] +
+            [(val, "Cluster 2") for val in cluster2_lad] +
+            [(val, "Cluster 3") for val in cluster3_lad]
+        )
+        lad_df = pd.DataFrame(lad_data, columns=["Percentage", "Cluster"])
+        plt.figure(figsize=(8, 6))
+        sns.boxplot(x="Cluster", y="Percentage", data=lad_df)
+        sns.stripplot(x = "Cluster", y = "Percentage", data = lad_df, color = "black", alpha = 0.5)
+        plt.title("Distribution of LAD Feature Percentages by Cluster")
+        plt.xlabel("Cluster")
+        plt.ylabel("Percentage of LAD Windows Detected")
+        plt.tight_layout()
+        plt.savefig("lad_feature_percentages_boxplot.png")
+        plt.close()
         
 if __name__ == "__main__":
     main()
