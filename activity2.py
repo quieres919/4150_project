@@ -162,7 +162,7 @@ def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indic
 
         # iterate only over Hist1 windows, Local I to avoid issues 
         for local_i, w_idx in enumerate(hist1_windows_indices):
-            
+            # Check if this NP detected this window, if so increment total detected and then check for features
             if window_np_presence[w_idx][np_idx]:
                 # Count number of windows detected in Hist1 region for this NP, and how many of those windows have the feature
                 total_detected += 1
