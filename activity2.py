@@ -152,16 +152,43 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         #print("Total within-cluster variation:", total_variation)
 
 def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indices, hist1_features, lad_features, 
-                                ):
+    vmn_features, rnapii_s2p, rnapii_s5p, rnapii_s7p, enhancer, h3k9me3, h3k20me3, h3k27me3, h3k36me3, nanog, pou5f1, sox2, ctcf):                
     # Initialize percentages 
     hist1_percentages = []
     lad_percentages = []
+    vmn_percentages = []
+    rnapii_s2p_percentages = [] 
+    rnapii_s5p_percentages = []
+    rnapii_s7p_percentages = []
+    enhancer_percentages = []
+    h3k9me3_percentages = []
+    h3k20me3_percentages = []
+    h3k27me3_percentages = []
+    h3k36me3_percentages = []
+    nanog_percentages = []
+    pou5f1_percentages = []
+    sox2_percentages = []
+    ctcf_percentages = []
+
     # Num NPs in Cluster
     for np_idx in cluster:
         # Initialize 
         total_detected = 0
         hist1_count = 0
         lad_count = 0
+        vmn_count = 0
+        rnapii_s2p_count = 0
+        rnapii_s5p_count = 0
+        rnapii_s7p_count = 0
+        enhancer_count = 0
+        h3k9me3_count = 0
+        h3k20me3_count = 0
+        h3k27me3_count = 0
+        h3k36me3_count = 0
+        nanog_count = 0
+        pou5f1_count = 0
+        sox2_count = 0
+        ctcf_count = 0
 
         # iterate only over Hist1 windows, Local I to avoid issues 
         for local_i, w_idx in enumerate(hist1_windows_indices):
@@ -175,16 +202,69 @@ def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indic
                 # If present in this window, increment LAD counter 
                 if lad_features[local_i] == 1:
                     lad_count += 1
+                if vmn_features[local_i] == 1:
+                    vmn_count += 1
+                if rnapii_s2p[local_i] == 1:
+                    rnapii_s2p_count += 1
+                if rnapii_s5p[local_i] == 1:
+                    rnapii_s5p_count += 1
+                if rnapii_s7p[local_i] == 1:
+                    rnapii_s7p_count += 1
+                if enhancer[local_i] == 1:
+                    enhancer_count += 1
+                if h3k9me3[local_i] == 1:
+                    h3k9me3_count += 1
+                if h3k20me3[local_i] == 1:
+                    h3k20me3_count += 1
+                if h3k27me3[local_i] == 1:
+                    h3k27me3_count += 1
+                if h3k36me3[local_i] == 1:
+                    h3k36me3_count += 1
+                if nanog[local_i] == 1:
+                    nanog_count += 1
+                if pou5f1[local_i] == 1:
+                    pou5f1_count += 1
+                if sox2[local_i] == 1:
+                    sox2_count += 1
+                if ctcf[local_i] == 1:
+                    ctcf_count += 1
+
         # Calculate percentages and append to a list to average later 
         if total_detected > 0:
             hist1_percentages.append(hist1_count / total_detected)
             lad_percentages.append(lad_count / total_detected)
+            vmn_percentages.append(vmn_count / total_detected)
+            rnapii_s2p_percentages.append(rnapii_s2p_count / total_detected)
+            rnapii_s5p_percentages.append(rnapii_s5p_count / total_detected)
+            rnapii_s7p_percentages.append(rnapii_s7p_count / total_detected)
+            enhancer_percentages.append(enhancer_count / total_detected)
+            h3k9me3_percentages.append(h3k9me3_count / total_detected)
+            h3k20me3_percentages.append(h3k20me3_count / total_detected)
+            h3k27me3_percentages.append(h3k27me3_count / total_detected)
+            h3k36me3_percentages.append(h3k36me3_count / total_detected)
+            nanog_percentages.append(nanog_count / total_detected)
+            pou5f1_percentages.append(pou5f1_count / total_detected)
+            sox2_percentages.append(sox2_count / total_detected)
+            ctcf_percentages.append(ctcf_count / total_detected)
         # Else: Append 0 
         else:
             hist1_percentages.append(0)
             lad_percentages.append(0)
+            vmn_percentages.append(0)
+            rnapii_s2p_percentages.append(0)
+            rnapii_s5p_percentages.append(0)
+            rnapii_s7p_percentages.append(0)
+            enhancer_percentages.append(0)
+            h3k9me3_percentages.append(0)
+            h3k20me3_percentages.append(0)
+            h3k27me3_percentages.append(0)
+            h3k36me3_percentages.append(0)
+            nanog_percentages.append(0)
+            pou5f1_percentages.append(0)
+            sox2_percentages.append(0)
+            ctcf_percentages.append(0)
 
-    return hist1_percentages, lad_percentages
+    return hist1_percentages, lad_percentages, vmn_percentages, rnapii_s2p_percentages, rnapii_s5p_percentages, rnapii_s7p_percentages, enhancer_percentages, h3k9me3_percentages, h3k20me3_percentages, h3k27me3_percentages, h3k36me3_percentages, nanog_percentages, pou5f1_percentages, sox2_percentages, ctcf_percentages
 
 def main():
     filename = "GSE64881_segmentation_at_30000bp.passqc.multibam (2).txt"
@@ -628,47 +708,187 @@ def main():
         # Extract Hist1 and Lad from file 
         hist1_features = df["Hist1"].astype(int).tolist()
         lad_features = df["LAD"].astype(int).tolist()
+        vmn_features = df["Vmn"].astype(int).tolist()
+        rnapii_s2p = df["RNAPII-S2P"].astype(int).tolist()
+        rnapii_s5p = df["RNAPII-S5P"].astype(int).tolist()
+        rnapii_s7p = df["RNAPII-S7P"].astype(int).tolist()
+        enhancer = df["Enhancer"].astype(int).tolist()
+        h3k9me3 = df["H3K9me3"].astype(int).tolist()
+        h3k20me3 = df["H3K20me3"].astype(int).tolist()
+        h3k27me3 = df["h3k27me3"].astype(int).tolist()
+        h3k36me3 = df["H3K36me3"].astype(int).tolist()
+        nanog = df["NANOG"].astype(int).tolist()
+        pou5f1 = df["pou5f1"].astype(int).tolist()
+        sox2 = df["sox2"].astype(int).tolist()
+        ctcf = df["CTCF-7BWU"].astype(int).tolist()
 
         # Call function to compute percentages for each cluster and print results
-        cluster1_hist1, cluster1_lad = compute_feature_percentages(
+        (cluster1_hist1, cluster1_lad, cluster1_vmn, cluster1_rnapii_s2p, cluster1_rnapii_s5p, cluster1_rnapii_s7p, cluster1_enhancer, 
+        cluster1_h3k9me3, cluster1_h3k20me3, cluster1_h3k27me3, cluster1_h3k36me3, cluster1_nanog, cluster1_pou5f1, cluster1_sox2, cluster1_ctcf) = compute_feature_percentages(
             best_result[1],
             window_np_presence,
             hist1_windows_indices,
             hist1_features,
-            lad_features
+            lad_features,
+            vmn_features,
+            rnapii_s2p,
+            rnapii_s5p,
+            rnapii_s7p,
+            enhancer,
+            h3k9me3,
+            h3k20me3,
+            h3k27me3,
+            h3k36me3,
+            nanog,
+            pou5f1,
+            sox2,
+            ctcf
         )
         # Print the percentages list for each cluster and feature
         cluster1_hist1_avg = np.mean(cluster1_hist1) if cluster1_hist1 else 0
         cluster1_lad_avg = np.mean(cluster1_lad) if cluster1_lad else 0
-        print ("\nCluster 1 Hist1 percentages:", cluster1_hist1_avg)
-        print ("Cluster 1 LAD percentages:", cluster1_lad_avg)
+        cluster1_vmn_avg = np.mean(cluster1_vmn) if cluster1_vmn else 0
+        cluster1_rnapii_s2p_avg = np.mean(cluster1_rnapii_s2p) if cluster1_rnapii_s2p else 0
+        cluster1_rnapii_s5p_avg = np.mean(cluster1_rnapii_s5p) if cluster1_rnapii_s5p else 0
+        cluster1_rnapii_s7p_avg = np.mean(cluster1_rnapii_s7p) if cluster1_rnapii_s7p else 0
+        cluster1_enhancer_avg = np.mean(cluster1_enhancer) if cluster1_enhancer else 0  
+        cluster1_h3k9me3_avg = np.mean(cluster1_h3k9me3) if cluster1_h3k9me3 else 0
+        cluster1_h3k20me3_avg = np.mean(cluster1_h3k20me3) if cluster1_h3k20me3 else 0  
+        cluster1_h3k27me3_avg = np.mean(cluster1_h3k27me3) if cluster1_h3k27me3 else 0
+        cluster1_h3k36me3_avg = np.mean(cluster1_h3k36me3) if cluster1_h3k36me3 else 0
+        cluster1_nanog_avg = np.mean(cluster1_nanog) if cluster1_nanog else 0
+        cluster1_pou5f1_avg = np.mean(cluster1_pou5f1) if cluster1_pou5f1 else 0
+        cluster1_sox2_avg = np.mean(cluster1_sox2) if cluster1_sox2 else 0
+        cluster1_ctcf_avg = np.mean(cluster1_ctcf) if cluster1_ctcf else 0
 
+        print ("\nCluster 1 Hist1 percentages:", cluster1_hist1_avg * 100)
+        print ("Cluster 1 LAD percentages:", cluster1_lad_avg * 100)
+        print ("Cluster 1 VMN percentages:", cluster1_vmn_avg * 100)
+        print ("Cluster 1 RNAPII-S2P percentages:", cluster1_rnapii_s2p_avg * 100)
+        print ("Cluster 1 RNAPII-S5P percentages:", cluster1_rnapii_s5p_avg * 100)
+        print ("Cluster 1 RNAPII-S7P percentages:", cluster1_rnapii_s7p_avg * 100)
+        print ("Cluster 1 Enhancer percentages:", cluster1_enhancer_avg * 100)
+        print ("Cluster 1 H3K9me3 percentages:", cluster1_h3k9me3_avg * 100)
+        print ("Cluster 1 H3K20me3 percentages:", cluster1_h3k20me3_avg * 100)
+        print ("Cluster 1 H3K27me3 percentages:", cluster1_h3k27me3_avg * 100)
+        print ("Cluster 1 H3K36me3 percentages:", cluster1_h3k36me3_avg * 100)
+        print ("Cluster 1 NANOG percentages:", cluster1_nanog_avg * 100)
+        print ("Cluster 1 POU5F-7BWU percentages:", cluster1_pou5f1_avg * 100)
+        print ("Cluster 1 SOX2 percentages:", cluster1_sox2_avg * 100)
+        print ("Cluster 1 CTCF-7BWU percentages:", cluster1_ctcf_avg * 100)
+
+   
         # Do it for cluster 2 
-        cluster2_hist1, cluster2_lad = compute_feature_percentages(
+        (cluster2_hist1, cluster2_lad, cluster2_vmn, cluster2_rnapii_s2p, cluster2_rnapii_s5p, cluster2_rnapii_s7p, cluster2_enhancer, 
+        cluster2_h3k9me3, cluster2_h3k20me3, cluster2_h3k27me3, cluster2_h3k36me3, cluster2_nanog, cluster2_pou5f1, cluster2_sox2, cluster2_ctcf) = compute_feature_percentages(
             best_result[2],
             window_np_presence,
             hist1_windows_indices,
             hist1_features,
-            lad_features
+            lad_features,
+            vmn_features,
+            rnapii_s2p,
+            rnapii_s5p,
+            rnapii_s7p,
+            enhancer,
+            h3k9me3,
+            h3k20me3,
+            h3k27me3,
+            h3k36me3,
+            nanog,
+            pou5f1,
+            sox2,
+            ctcf
         )
         cluster2_hist1_avg = np.mean(cluster2_hist1) if cluster2_hist1 else 0
         cluster2_lad_avg = np.mean(cluster2_lad) if cluster2_lad else 0
-        print ("\nCluster 2 Hist1 percentages:", cluster2_hist1_avg)
-        print ("Cluster 2 LAD percentages:", cluster2_lad_avg)
+        cluster2_vmn_avg = np.mean(cluster2_vmn) if cluster2_vmn else 0
+        cluster2_rnapii_s2p_avg = np.mean(cluster2_rnapii_s2p) if cluster2_rnapii_s2p else 0
+        cluster2_rnapii_s5p_avg = np.mean(cluster2_rnapii_s5p) if cluster2_rnapii_s5p else 0
+        cluster2_rnapii_s7p_avg = np.mean(cluster2_rnapii_s7p) if cluster2_rnapii_s7p else 0
+        cluster2_enhancer_avg = np.mean(cluster2_enhancer) if cluster2_enhancer else 0  
+        cluster2_h3k9me3_avg = np.mean(cluster2_h3k9me3) if cluster2_h3k9me3 else 0
+        cluster2_h3k20me3_avg = np.mean(cluster2_h3k20me3) if cluster2_h3k20me3 else 0  
+        cluster2_h3k27me3_avg = np.mean(cluster2_h3k27me3) if cluster2_h3k27me3 else 0
+        cluster2_h3k36me3_avg = np.mean(cluster2_h3k36me3) if cluster2_h3k36me3 else 0
+        cluster2_nanog_avg = np.mean(cluster2_nanog) if cluster2_nanog else 0
+        cluster2_pou5f1_avg = np.mean(cluster2_pou5f1) if cluster2_pou5f1 else 0
+        cluster2_sox2_avg = np.mean(cluster2_sox2) if cluster2_sox2 else 0
+        cluster2_ctcf_avg = np.mean(cluster2_ctcf) if cluster2_ctcf else 0
 
-        # Cluster 3 
-        cluster3_hist1, cluster3_lad = compute_feature_percentages(
+        print ("\nCluster 2 Hist1 percentages:",cluster2_hist1_avg * 100)
+        print ("Cluster 2 LAD percentages:",cluster2_lad_avg * 100)
+        print ("Cluster 2 VMN percentages:",cluster2_vmn_avg * 100)
+        print ("Cluster 2 RNAPII-S2P percentages:",cluster2_rnapii_s2p_avg * 100)
+        print ("Cluster 2 RNAPII-S5P percentages:",cluster2_rnapii_s5p_avg * 100)
+        print ("Cluster 2 RNAPII-S7P percentages:",cluster2_rnapii_s7p_avg * 100)
+        print ("Cluster 2 Enhancer percentages:",cluster2_enhancer_avg * 100)
+        print ("Cluster 2 H3K9me3 percentages:",cluster2_h3k9me3_avg * 100)
+        print ("Cluster 2 H3K20me3 percentages:",cluster2_h3k20me3_avg * 100)
+        print ("Cluster 2 H3K27me3 percentages:",cluster2_h3k27me3_avg * 100)
+        print ("Cluster 2 H3K36me3 percentages:",cluster2_h3k36me3_avg * 100)
+        print ("Cluster 2 NANOG percentages:",cluster2_nanog_avg * 100)
+        print ("Cluster 2 POU5F-7BWU percentages:",cluster2_pou5f1_avg * 100)
+        print ("Cluster 2 SOX2 percentages:",cluster2_sox2_avg * 100)
+        print ("Cluster 2 CTCF-7BWU percentages:",cluster2_ctcf_avg * 100)
+
+   
+        (cluster3_hist1, cluster3_lad, cluster3_vmn, cluster3_rnapii_s2p, cluster3_rnapii_s5p, cluster3_rnapii_s7p, cluster3_enhancer, 
+        cluster3_h3k9me3, cluster3_h3k20me3, cluster3_h3k27me3, cluster3_h3k36me3, cluster3_nanog, cluster3_pou5f1, cluster3_sox2, cluster3_ctcf) = compute_feature_percentages(
             best_result[3],
             window_np_presence,
             hist1_windows_indices,
             hist1_features,
-            lad_features
+            lad_features,
+            vmn_features,
+            rnapii_s2p,
+            rnapii_s5p,
+            rnapii_s7p,
+            enhancer,
+            h3k9me3,
+            h3k20me3,
+            h3k27me3,
+            h3k36me3,
+            nanog,
+            pou5f1,
+            sox2,
+            ctcf
         )
         cluster3_hist1_avg = np.mean(cluster3_hist1) if cluster3_hist1 else 0
         cluster3_lad_avg = np.mean(cluster3_lad) if cluster3_lad else 0
-        print ("\nCluster 3 Hist1 percentages:", cluster3_hist1_avg)
-        print ("Cluster 3 LAD percentages:", cluster3_lad_avg)
-                        
+        cluster3_vmn_avg = np.mean(cluster3_vmn) if cluster3_vmn else 0
+        cluster3_rnapii_s2p_avg = np.mean(cluster3_rnapii_s2p) if cluster3_rnapii_s2p else 0
+        cluster3_rnapii_s5p_avg = np.mean(cluster3_rnapii_s5p) if cluster3_rnapii_s5p else 0
+        cluster3_rnapii_s7p_avg = np.mean(cluster3_rnapii_s7p) if cluster3_rnapii_s7p else 0
+        cluster3_enhancer_avg = np.mean(cluster3_enhancer) if cluster3_enhancer else 0  
+        cluster3_h3k9me3_avg = np.mean(cluster3_h3k9me3) if cluster3_h3k9me3 else 0
+        cluster3_h3k20me3_avg = np.mean(cluster3_h3k20me3) if cluster3_h3k20me3 else 0  
+        cluster3_h3k27me3_avg = np.mean(cluster3_h3k27me3) if cluster3_h3k27me3 else 0
+        cluster3_h3k36me3_avg = np.mean(cluster3_h3k36me3) if cluster3_h3k36me3 else 0
+        cluster3_nanog_avg = np.mean(cluster3_nanog) if cluster3_nanog else 0
+        cluster3_pou5f1_avg = np.mean(cluster3_pou5f1) if cluster3_pou5f1 else 0
+        cluster3_sox2_avg = np.mean(cluster3_sox2) if cluster3_sox2 else 0
+        cluster3_ctcf_avg = np.mean(cluster3_ctcf) if cluster3_ctcf else 0
+
+
+
+        print ("\nCluster 3 Hist1 percentages:", cluster3_hist1_avg * 100)
+        print ("Cluster 3 LAD percentages:", cluster3_lad_avg * 100)
+        print ("Cluster 3 VMN percentages:", cluster3_vmn_avg * 100)
+        print ("Cluster 3 RNAPII-S2P percentages:", cluster3_rnapii_s2p_avg * 100)
+        print ("Cluster 3 RNAPII-S5P percentages:", cluster3_rnapii_s5p_avg * 100)
+        print ("Cluster 3 RNAPII-S7P percentages:", cluster3_rnapii_s7p_avg * 100)
+        print ("Cluster 3 Enhancer percentages:", cluster3_enhancer_avg * 100)
+        print ("Cluster 3 H3K9me3 percentages:", cluster3_h3k9me3_avg * 100)
+        print ("Cluster 3 H3K20me3 percentages:", cluster3_h3k20me3_avg * 100)
+        print ("Cluster 3 H3K27me3 percentages:", cluster3_h3k27me3_avg * 100)  
+        print ("Cluster 3 H3K36me3 percentages:", cluster3_h3k36me3_avg * 100)
+        print ("Cluster 3 NANOG percentages:", cluster3_nanog_avg * 100)    
+        print ("Cluster 3 POU5F-7BWU percentages:", cluster3_pou5f1_avg * 100)
+        print ("Cluster 3 SOX2 percentages:", cluster3_sox2_avg * 100)
+        print ("Cluster 3 CTCF-7BWU percentages:", cluster3_ctcf_avg * 100)
+
+
         # Make a Boxplot for Hist 1
         hist1_data = (
             [(val, "Cluster 1") for val in cluster1_hist1] +
@@ -731,29 +951,119 @@ def main():
             plt.close()
         
         # FEATURE - SELECTION 4
-        # Calculate percentage of the rest of the features 
-            
-        vmn_features = df["Vmn"].astype(int).tolist()
-        rnapii_s2p = df["RNAPII_S2P"].astype(int).tolist()
-        rnapii_s5p = df["RNAPII_S5P"].astype(int).tolist()
-        rnapii_s7p = df["RNAPII_S7P"].astype(int).tolist()
-        enhancer = df["Enhancer"].astype(int).tolist()
-        h3k9me3 = df["H3K9me3"].astype(int).tolist()
-        h3k20me3 = df["H3K20me3"].astype(int).tolist()
-        h3k27me3 = df["h3k27me3"].astype(int).tolist()
-        h3k36me3 = df["H3K36me3"].astype(int).tolist()
-        nanog = df["NANOG"].astype(int).tolist()
-        pou5f1 = df["pou5f1"].astype(int).tolist()
-        sox2 = df["sox2"].astype(int).tolist()
-        ctcf = df["CTCF-7BWU"].astype(int).tolist()
-
-        # region
+        # Radar chart for each cluster and feature, with percentage of NPs in that cluster that have that feature
+        categories = ["Hist1", "LAD", "VMN", "RNAPII_S2P", "RNAPII_S5P", "RNAPII_S7P", "Enhancer", "H3K9me3", "H3K20me3", "H3K27me3", "H3K36me3", "NANOG", "pou5f1", "sox2", "CTCF"]
         
 
-        # endregion
+        values = [
+            cluster1_hist1_avg * 100,
+            cluster1_lad_avg * 100,
+            cluster1_vmn_avg * 100,
+            cluster1_rnapii_s2p_avg * 100,
+            cluster1_rnapii_s5p_avg * 100,
+            cluster1_rnapii_s7p_avg * 100,
+            cluster1_enhancer_avg * 100,
+            cluster1_h3k9me3_avg * 100,
+            cluster1_h3k20me3_avg * 100,
+            cluster1_h3k27me3_avg * 100,
+            cluster1_h3k36me3_avg * 100,
+            cluster1_nanog_avg * 100,
+            cluster1_pou5f1_avg * 100,
+            cluster1_sox2_avg * 100,
+            cluster1_ctcf_avg * 100,
+        ]
+                 
+        n = len(categories)
+        values += values[:1]  # Duplicate the values to close the radar chart
+        angles = np.linspace(0, 2 * np.pi, n, endpoint=False).tolist()
+        angles += angles[:1]  # Duplicate the angles to close the radar chart
+        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
 
-        # Compute averages for each cluster and feature, store in a dictionary and print results
+        ax.set_theta_offset(np.pi / 2)
+        ax.set_theta_direction(-1)
+
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(categories)
+
+        ax.set_rlabel_position(0)
+        plt.yticks([20, 40, 60, 80], ["20", "40", "60", "80"], color="grey", size=7)
+        plt.ylim(0, 100)
+
+        ax.plot(angles, values, color = sns.color_palette("deep")[0], linewidth=2, linestyle='solid')
+        ax.fill(angles, values, color = sns.color_palette("deep")[0], alpha=0.25)
+
+        plt.title("Feature Percentages for Cluster 1", size=20, color=sns.color_palette("deep")[0], y=1.1)
+        plt.tight_layout()
+        plt.savefig("radar_chart_cluster_1.png")
+        plt.close()
+        # Repeat for cluster 2
+        values = [
+            cluster2_hist1_avg * 100,
+            cluster2_lad_avg * 100,
+            cluster2_vmn_avg * 100,
+            cluster2_rnapii_s2p_avg * 100,
+            cluster2_rnapii_s5p_avg * 100,
+            cluster2_rnapii_s7p_avg * 100,
+            cluster2_enhancer_avg * 100,
+            cluster2_h3k9me3_avg * 100,
+            cluster2_h3k20me3_avg * 100,
+            cluster2_h3k27me3_avg * 100,
+            cluster2_h3k36me3_avg * 100,
+            cluster2_nanog_avg * 100,
+            cluster2_pou5f1_avg * 100,
+            cluster2_sox2_avg * 100,
+            cluster2_ctcf_avg * 100,
+        ]
+        values += values[:1]  # Duplicate the values to close the radar chart
+        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+        ax.set_theta_offset(np.pi / 2)
+        ax.set_theta_direction(-1)
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(categories)
+        ax.set_rlabel_position(0)
+        plt.yticks([20, 40, 60, 80], ["20", "40", "60", "80"], color="grey", size=7)
+        plt.ylim(0, 100)
+        ax.plot(angles, values, color = sns.color_palette("deep")[1], linewidth=2, linestyle='solid')
+        ax.fill(angles, values, color = sns.color_palette("deep")[1], alpha=0.25)
+        plt.title("Feature Percentages for Cluster 2", size=20, color=sns.color_palette("deep")[1], y=1.1)
+        plt.tight_layout()
+        plt.savefig("radar_chart_cluster_2.png")
+        plt.close()
+        # Repeat for cluster 3
         
+        values = [
+            cluster3_hist1_avg * 100,
+            cluster3_lad_avg * 100,
+            cluster3_vmn_avg * 100,
+            cluster3_rnapii_s2p_avg * 100,
+            cluster3_rnapii_s5p_avg * 100,
+            cluster3_rnapii_s7p_avg * 100,
+            cluster3_enhancer_avg * 100,
+            cluster3_h3k9me3_avg * 100,
+            cluster3_h3k20me3_avg * 100,
+            cluster3_h3k27me3_avg * 100,
+            cluster3_h3k36me3_avg * 100,
+            cluster3_nanog_avg * 100,
+            cluster3_pou5f1_avg * 100,
+            cluster3_sox2_avg * 100,
+            cluster3_ctcf_avg * 100,
+        ]
+        values += values[:1]  # Duplicate the values to close the radar chart
+        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+        ax.set_theta_offset(np.pi / 2)
+        ax.set_theta_direction(-1)
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(categories)
+        ax.set_rlabel_position(0)
+        plt.yticks([20, 40, 60, 80], ["20", "40", "60", "80"], color="grey", size=7)
+        plt.ylim(0, 100)
+        ax.plot(angles, values, color = sns.color_palette("deep")[2], linewidth=2, linestyle='solid')
+        ax.fill(angles, values, color = sns.color_palette("deep")[2], alpha=0.25)
+        plt.title("Feature Percentages for Cluster 3", size=20, color=sns.color_palette("deep")[2], y=1.1)
+        plt.tight_layout()
+        plt.savefig("radar_chart_cluster_3.png")
+        plt.close()
+
 if __name__ == "__main__":
     main()
     # testing
