@@ -86,6 +86,7 @@ def k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized
     #print("\nNew cluster centers after iteration:", new_centers)
     return new_centers
 
+# Says it uses jaaccard_normalized but it uses then normal jaccard (Need to change the function variable name to reflect this)
 def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
     iteration = 0
     seen_centers = set()
@@ -137,6 +138,7 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         #print("\nFinal Cluster 1 NPs:", cluster1)
         #print("\nFinal Cluster 2 NPs:", cluster2)
         #print("\nFinal Cluster 3 NPs:", cluster3)
+    # Variation is the sum of the distance of each NP to its assigned center
     variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1)
     variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2)
     variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3)
@@ -149,7 +151,8 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         #print("Cluster 3 variation:", variation3)
         #print("Total within-cluster variation:", total_variation)
 
-def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indices, hist1_features, lad_features):
+def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indices, hist1_features, lad_features, 
+                                ):
     # Initialize percentages 
     hist1_percentages = []
     lad_percentages = []
@@ -699,6 +702,57 @@ def main():
         plt.tight_layout()
         plt.savefig("lad_feature_percentages_boxplot.png")
         plt.close()
+
+        # FEATURE SELECTION - 3
+
+        # Calculate percentage of NPs in each radial position for each cluster
+        print("\n=== RADIAL POSITION DISTRIBUTION BY CLUSTER ===")
+        # Enumerate through each cluster best cluster, starting at 1
+        for i, cluster in enumerate([best_result[1], best_result[2], best_result[3]], start=1):
+            # Get the radial positions from data computed earlier
+            cluster_radial_positions = [radial_position[np_idx] for np_idx in cluster]
+            # Print cluster
+            print(f"\nCluster {i}:")
+            # Go through 1 - 5 radial positions and calculate percentage for this cluster, print results
+            # r is the radial position in this cluster
+            count = [cluster_radial_positions.count(r) for r in range(1, 6)]   
+            total = len(cluster_radial_positions)
+            percentages = [(c/total)* 100 for c in count ] if total > 0 else [0] * 5
+            print(count)
+            print(percentages)
+            plt.figure(figsize=(8, 6))
+            plt.bar(range(1,6), percentages)
+            plt.xticks(range(1,6))
+            plt.xlabel("Radial Position")
+            plt.ylabel("Percentage of NPs in Cluster")
+            plt.title(f"Radial Position Distribution for Cluster {i}")
+            plt.tight_layout()
+            plt.savefig(f"radial_position_distribution_cluster_{i}.png")
+            plt.close()
+        
+        # FEATURE - SELECTION 4
+        # Calculate percentage of the rest of the features 
+            
+        vmn_features = df["Vmn"].astype(int).tolist()
+        rnapii_s2p = df["RNAPII_S2P"].astype(int).tolist()
+        rnapii_s5p = df["RNAPII_S5P"].astype(int).tolist()
+        rnapii_s7p = df["RNAPII_S7P"].astype(int).tolist()
+        enhancer = df["Enhancer"].astype(int).tolist()
+        h3k9me3 = df["H3K9me3"].astype(int).tolist()
+        h3k20me3 = df["H3K20me3"].astype(int).tolist()
+        h3k27me3 = df["h3k27me3"].astype(int).tolist()
+        h3k36me3 = df["H3K36me3"].astype(int).tolist()
+        nanog = df["NANOG"].astype(int).tolist()
+        pou5f1 = df["pou5f1"].astype(int).tolist()
+        sox2 = df["sox2"].astype(int).tolist()
+        ctcf = df["CTCF-7BWU"].astype(int).tolist()
+
+        # region
+        
+
+        # endregion
+
+        # Compute averages for each cluster and feature, store in a dictionary and print results
         
 if __name__ == "__main__":
     main()
