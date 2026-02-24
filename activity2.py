@@ -150,7 +150,7 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         #print("Total within-cluster variation:", total_variation)
 
 def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indices, hist1_features, lad_features):
-
+    # Initialize percentages 
     hist1_percentages = []
     lad_percentages = []
     # Num NPs in Cluster
@@ -166,17 +166,17 @@ def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indic
             if window_np_presence[w_idx][np_idx]:
                 # Count number of windows detected in Hist1 region for this NP, and how many of those windows have the feature
                 total_detected += 1
-
                 # If the feature is present in this window, increment the count for that feature for this NP
                 if hist1_features[local_i] == 1:
                     hist1_count += 1
-
+                # If present in this window, increment LAD counter 
                 if lad_features[local_i] == 1:
                     lad_count += 1
-        # Calculate percentages 
+        # Calculate percentages and append to a list to average later 
         if total_detected > 0:
             hist1_percentages.append(hist1_count / total_detected)
             lad_percentages.append(lad_count / total_detected)
+        # Else: Append 0 
         else:
             hist1_percentages.append(0)
             lad_percentages.append(0)
@@ -626,7 +626,6 @@ def main():
         hist1_features = df["Hist1"].astype(int).tolist()
         lad_features = df["LAD"].astype(int).tolist()
 
-        
         # Call function to compute percentages for each cluster and print results
         cluster1_hist1, cluster1_lad = compute_feature_percentages(
             best_result[1],
@@ -641,6 +640,7 @@ def main():
         print ("\nCluster 1 Hist1 percentages:", cluster1_hist1_avg)
         print ("Cluster 1 LAD percentages:", cluster1_lad_avg)
 
+        # Do it for cluster 2 
         cluster2_hist1, cluster2_lad = compute_feature_percentages(
             best_result[2],
             window_np_presence,
@@ -653,6 +653,7 @@ def main():
         print ("\nCluster 2 Hist1 percentages:", cluster2_hist1_avg)
         print ("Cluster 2 LAD percentages:", cluster2_lad_avg)
 
+        # Cluster 3 
         cluster3_hist1, cluster3_lad = compute_feature_percentages(
             best_result[3],
             window_np_presence,
@@ -664,7 +665,7 @@ def main():
         cluster3_lad_avg = np.mean(cluster3_lad) if cluster3_lad else 0
         print ("\nCluster 3 Hist1 percentages:", cluster3_hist1_avg)
         print ("Cluster 3 LAD percentages:", cluster3_lad_avg)
-                    
+                        
         # Make a Boxplot for Hist 1
         hist1_data = (
             [(val, "Cluster 1") for val in cluster1_hist1] +
