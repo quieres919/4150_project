@@ -87,7 +87,7 @@ def k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized
     return new_centers
 
 # Says it uses jaaccard_normalized but it uses then normal jaccard (Need to change the function variable name to reflect this)
-def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
+def k_medoids(all_indices, jaccard_distance_matrix, initial_centers):
     iteration = 0
     seen_centers = set()
     while(True):
@@ -101,7 +101,7 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         # Calculate distance and assign to closest center for each NP
         for idx, np_idx in enumerate(all_indices):
             distances = [
-                jaccard_distance_normalized_matrix[np_idx][center] for center in initial_centers
+                jaccard_distance_matrix[np_idx][center] for center in initial_centers
             ]
             cluster_assignments[idx] = np.argmin(distances)
             
@@ -111,7 +111,7 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         cluster3 = [all_indices[i] for i in range(len(all_indices)) if cluster_assignments[i] == 2]
 
         # Reassign centers 
-        initial_centers = k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_normalized_matrix, initial_centers)
+        initial_centers = k_means_clustering(cluster1, cluster2, cluster3, jaccard_distance_matrix, initial_centers)
             
         # Check if they are the same 
         if previous_centers == initial_centers:
@@ -139,9 +139,9 @@ def k_medoids(all_indices, jaccard_distance_normalized_matrix, initial_centers):
         #print("\nFinal Cluster 2 NPs:", cluster2)
         #print("\nFinal Cluster 3 NPs:", cluster3)
     # Variation is the sum of the distance of each NP to its assigned center
-    variation1 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[0]] for np_idx in cluster1)
-    variation2 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[1]] for np_idx in cluster2)
-    variation3 = sum(jaccard_distance_normalized_matrix[np_idx][initial_centers[2]] for np_idx in cluster3)
+    variation1 = sum(jaccard_distance_matrix[np_idx][initial_centers[0]] for np_idx in cluster1)
+    variation2 = sum(jaccard_distance_matrix[np_idx][initial_centers[1]] for np_idx in cluster2)
+    variation3 = sum(jaccard_distance_matrix[np_idx][initial_centers[2]] for np_idx in cluster3)
     
     total_variation = (variation1 + variation2 + variation3) 
     return initial_centers, cluster1, cluster2, cluster3, total_variation
@@ -191,6 +191,8 @@ def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indic
         ctcf_count = 0
 
         # iterate only over Hist1 windows, Local I to avoid issues 
+        # Local I is like 0 - number of hist1 windows
+        # w_idx is global list and in the tens of thousands, but we want to compare to the hist1_region.csv which is smaller
         for local_i, w_idx in enumerate(hist1_windows_indices):
             # Check if this NP detected this window, if so increment total detected and then check for features
             if window_np_presence[w_idx][np_idx]:
