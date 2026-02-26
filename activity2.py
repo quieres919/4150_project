@@ -202,6 +202,7 @@ def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indic
                 # If present in this window, increment LAD counter 
                 if lad_features[local_i] == 1:
                     lad_count += 1
+                # For the last project, continue this for each feature we want to compute percentages for 
                 if vmn_features[local_i] == 1:
                     vmn_count += 1
                 if rnapii_s2p[local_i] == 1:
@@ -246,7 +247,7 @@ def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indic
             pou5f1_percentages.append(pou5f1_count / total_detected)
             sox2_percentages.append(sox2_count / total_detected)
             ctcf_percentages.append(ctcf_count / total_detected)
-        # Else: Append 0 
+        # Else: Append 0 to avoid dividing by 0 and to reflect that if no windows were detected, then 0% of detected windows had the feature
         else:
             hist1_percentages.append(0)
             lad_percentages.append(0)
@@ -744,7 +745,8 @@ def main():
             sox2,
             ctcf
         )
-        # Print the percentages list for each cluster and feature
+
+        # Calculate average percentage of feature
         cluster1_hist1_avg = np.mean(cluster1_hist1) if cluster1_hist1 else 0
         cluster1_lad_avg = np.mean(cluster1_lad) if cluster1_lad else 0
         cluster1_vmn_avg = np.mean(cluster1_vmn) if cluster1_vmn else 0
@@ -761,6 +763,7 @@ def main():
         cluster1_sox2_avg = np.mean(cluster1_sox2) if cluster1_sox2 else 0
         cluster1_ctcf_avg = np.mean(cluster1_ctcf) if cluster1_ctcf else 0
 
+        # Print 
         print ("\nCluster 1 Hist1 percentages:", cluster1_hist1_avg * 100)
         print ("Cluster 1 LAD percentages:", cluster1_lad_avg * 100)
         print ("Cluster 1 VMN percentages:", cluster1_vmn_avg * 100)
@@ -777,8 +780,7 @@ def main():
         print ("Cluster 1 SOX2 percentages:", cluster1_sox2_avg * 100)
         print ("Cluster 1 CTCF-7BWU percentages:", cluster1_ctcf_avg * 100)
 
-   
-        # Do it for cluster 2 
+        # Call function for cluster 2 
         (cluster2_hist1, cluster2_lad, cluster2_vmn, cluster2_rnapii_s2p, cluster2_rnapii_s5p, cluster2_rnapii_s7p, cluster2_enhancer, 
         cluster2_h3k9me3, cluster2_h3k20me3, cluster2_h3k27me3, cluster2_h3k36me3, cluster2_nanog, cluster2_pou5f1, cluster2_sox2, cluster2_ctcf) = compute_feature_percentages(
             best_result[2],
@@ -800,6 +802,8 @@ def main():
             sox2,
             ctcf
         )
+
+        #Cluster 2 averages
         cluster2_hist1_avg = np.mean(cluster2_hist1) if cluster2_hist1 else 0
         cluster2_lad_avg = np.mean(cluster2_lad) if cluster2_lad else 0
         cluster2_vmn_avg = np.mean(cluster2_vmn) if cluster2_vmn else 0
@@ -816,6 +820,7 @@ def main():
         cluster2_sox2_avg = np.mean(cluster2_sox2) if cluster2_sox2 else 0
         cluster2_ctcf_avg = np.mean(cluster2_ctcf) if cluster2_ctcf else 0
 
+        # Print
         print ("\nCluster 2 Hist1 percentages:",cluster2_hist1_avg * 100)
         print ("Cluster 2 LAD percentages:",cluster2_lad_avg * 100)
         print ("Cluster 2 VMN percentages:",cluster2_vmn_avg * 100)
@@ -832,7 +837,7 @@ def main():
         print ("Cluster 2 SOX2 percentages:",cluster2_sox2_avg * 100)
         print ("Cluster 2 CTCF-7BWU percentages:",cluster2_ctcf_avg * 100)
 
-   
+        # Call function for cluster 3
         (cluster3_hist1, cluster3_lad, cluster3_vmn, cluster3_rnapii_s2p, cluster3_rnapii_s5p, cluster3_rnapii_s7p, cluster3_enhancer, 
         cluster3_h3k9me3, cluster3_h3k20me3, cluster3_h3k27me3, cluster3_h3k36me3, cluster3_nanog, cluster3_pou5f1, cluster3_sox2, cluster3_ctcf) = compute_feature_percentages(
             best_result[3],
@@ -854,6 +859,8 @@ def main():
             sox2,
             ctcf
         )
+
+        # Calculate cluster 3 averages
         cluster3_hist1_avg = np.mean(cluster3_hist1) if cluster3_hist1 else 0
         cluster3_lad_avg = np.mean(cluster3_lad) if cluster3_lad else 0
         cluster3_vmn_avg = np.mean(cluster3_vmn) if cluster3_vmn else 0
@@ -870,8 +877,7 @@ def main():
         cluster3_sox2_avg = np.mean(cluster3_sox2) if cluster3_sox2 else 0
         cluster3_ctcf_avg = np.mean(cluster3_ctcf) if cluster3_ctcf else 0
 
-
-
+        # Print
         print ("\nCluster 3 Hist1 percentages:", cluster3_hist1_avg * 100)
         print ("Cluster 3 LAD percentages:", cluster3_lad_avg * 100)
         print ("Cluster 3 VMN percentages:", cluster3_vmn_avg * 100)
@@ -924,19 +930,21 @@ def main():
         plt.close()
 
         # FEATURE SELECTION - 3
-
         # Calculate percentage of NPs in each radial position for each cluster
+
         print("\n=== RADIAL POSITION DISTRIBUTION BY CLUSTER ===")
         # Enumerate through each cluster best cluster, starting at 1
         for i, cluster in enumerate([best_result[1], best_result[2], best_result[3]], start=1):
             # Get the radial positions from data computed earlier
+            # Radial_position is a list where the index corresponds to the NP index and the value is the radial position (1-5)
             cluster_radial_positions = [radial_position[np_idx] for np_idx in cluster]
             # Print cluster
             print(f"\nCluster {i}:")
-            # Go through 1 - 5 radial positions and calculate percentage for this cluster, print results
             # r is the radial position in this cluster
             count = [cluster_radial_positions.count(r) for r in range(1, 6)]   
+            # Total length of cluster for percentage calculation, if cluster is empty set to 1 to avoid division by zero
             total = len(cluster_radial_positions)
+            # Calculate percentages and multiply by 100 for actual percentage and avoid division by zero, if total is 0 then set all percentages to 0
             percentages = [(c/total)* 100 for c in count ] if total > 0 else [0] * 5
             print(count)
             print(percentages)
@@ -951,10 +959,15 @@ def main():
             plt.close()
         
         # FEATURE - SELECTION 4
+        #Do the features allow you to discriminate between the clusters?
+        #i. Compare the k radar charts.
+        #ii. What might be the possible meaning of your findings in the domain of biology?
         # Radar chart for each cluster and feature, with percentage of NPs in that cluster that have that feature
-        categories = ["Hist1", "LAD", "VMN", "RNAPII_S2P", "RNAPII_S5P", "RNAPII_S7P", "Enhancer", "H3K9me3", "H3K20me3", "H3K27me3", "H3K36me3", "NANOG", "pou5f1", "sox2", "CTCF"]
-        
 
+        # Categories is every feature we want to search for
+        categories = ["Hist1", "LAD", "VMN", "RNAPII_S2P", "RNAPII_S5P", "RNAPII_S7P", "Enhancer", "H3K9me3", "H3K20me3", "H3K27me3", "H3K36me3", "NANOG", "pou5f1", "sox2", "CTCF"]
+
+        # Multiply by 100 to get percentage for radar chart and create a list of values for cluster 1
         values = [
             cluster1_hist1_avg * 100,
             cluster1_lad_avg * 100,
@@ -972,30 +985,37 @@ def main():
             cluster1_sox2_avg * 100,
             cluster1_ctcf_avg * 100,
         ]
-                 
+
+        # Number of categories for radar chart         
         n = len(categories)
         values += values[:1]  # Duplicate the values to close the radar chart
         angles = np.linspace(0, 2 * np.pi, n, endpoint=False).tolist()
         angles += angles[:1]  # Duplicate the angles to close the radar chart
         fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
 
+        # Set the direction of the radar chart and the starting point
         ax.set_theta_offset(np.pi / 2)
         ax.set_theta_direction(-1)
 
+        # Set the category labels on the radar chart
         ax.set_xticks(angles[:-1])
         ax.set_xticklabels(categories)
-
+        
+        # Set the y ticks
         ax.set_rlabel_position(0)
         plt.yticks([20, 40, 60, 80], ["20", "40", "60", "80"], color="grey", size=7)
         plt.ylim(0, 100)
 
+        # Plot the radar chart for cluster 1
         ax.plot(angles, values, color = sns.color_palette("deep")[0], linewidth=2, linestyle='solid')
         ax.fill(angles, values, color = sns.color_palette("deep")[0], alpha=0.25)
 
+        # Title and save 
         plt.title("Feature Percentages for Cluster 1", size=20, color=sns.color_palette("deep")[0], y=1.1)
         plt.tight_layout()
         plt.savefig("radar_chart_cluster_1.png")
         plt.close()
+
         # Repeat for cluster 2
         values = [
             cluster2_hist1_avg * 100,
@@ -1029,8 +1049,8 @@ def main():
         plt.tight_layout()
         plt.savefig("radar_chart_cluster_2.png")
         plt.close()
-        # Repeat for cluster 3
         
+        # Repeat for cluster 3
         values = [
             cluster3_hist1_avg * 100,
             cluster3_lad_avg * 100,
@@ -1064,6 +1084,8 @@ def main():
         plt.savefig("radar_chart_cluster_3.png")
         plt.close()
 
+        # In general, if One cluster is high in one of the features, then the other clusters are not 
+        # high in that feature, so the features do allow us to discriminate between the clusters.
 if __name__ == "__main__":
     main()
     # testing
