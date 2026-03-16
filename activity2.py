@@ -12,8 +12,13 @@ def generate_heatmap(data_matrix, title, xlabel, ylabel, filename):
     # Make symmetric by taking upper triangle and mirroring it
     i_lower = np.tril_indices_from(data_matrix, -1)
     data_matrix[i_lower] = data_matrix.T[i_lower]
-    np.fill_diagonal(data_matrix, 0 if "Distance" in title else 1)
-    ax = sns.heatmap(data_matrix, cmap="coolwarm" if "Similarity" in title else "viridis", square=True)
+    np.fill_diagonal(data_matrix, 0)
+    ax = sns.heatmap(
+    data_matrix,
+    cmap="coolwarm",
+    cbar=True,
+    center=0
+    )
     step = 20
     tick = list(range(0, data_matrix.shape[0], step))
     ax.set_xticklabels(ax.get_xticklabels(), rotation=0)
@@ -1088,7 +1093,61 @@ def main():
 
         # In general, if One cluster is high in one of the features, then the other clusters are not 
         # high in that feature, so the features do allow us to discriminate between the clusters.
+
+        # CO-SEGREGATION ACTIVITY
+        # Design software to calculate the normalized linkage table containing the normalized linkage for
+        # each pair of windows in the Hist1 region.
+
+        # Initialize array
+        num_windows = len(hist1_windows_indices)
+        normalized_linkage_matrix = np.zeros((num_windows, num_windows))
+        # Calculate normalized linkage for each pair of windows
+        
+        # Loop through windows 
+        for i in range(num_windows):
+            for j in range(i + 1, num_windows):
+                w1 = hist1_windows_indices[i]
+                w2 = hist1_windows_indices[j]
+                # Calculate the number of NPs that detect each window and both windows
+                n_w1 = sum(window_np_presence[w1])
+                n_w2 = sum(window_np_presence[w2])
+                n_both = sum(window_np_presence[w1][np_idx] and window_np_presence[w2][np_idx] for np_idx in range(num_nps))
+                
+                w1percent = n_w1 / num_nps if n_w1 > 0 else 0
+                w2percent = n_w2 / num_nps if n_w2 > 0 else 0
+                bothpercent = n_both / num_nps if n_both > 0 else 0
+
+                # Expected change
+                expected_change = w1percent * w2percent
+                # actual change = bothpercent - expected change
+
+                D = bothpercent - expected_change
+                if D >= 0:
+                    # If D is positive, the maximum positive change is limited by the smaller of the two windows' overlapping percentages
+                    Dmax = min(w1percent * (1 - w2percent), w2percent * (1 - w1percent))
+                else:
+                    # If D is negative, the maximum negative change is limited by the smaller of the two windows' non-overlapping percentages
+                    Dmax = min(w1percent * w2percent, (1 - w1percent) * (1 - w2percent))
+                
+                # Normalized linkage
+                normalized_linkage = D / Dmax if Dmax > 0 else 0
+                normalized_linkage_matrix[i][j] = normalized_linkage
+                normalized_linkage_matrix[j][i] = normalized_linkage
+
+        # Heatmap for normalized linkage matrix
+        generate_heatmap(
+            normalized_linkage_matrix,
+            "Normalized Linkage Heatmap for Hist1 Windows",
+            "Window Index",
+            "Window Index",
+            "normalized_linkage_heatmap_hist1.png"
+        )
+
+
+
+
 if __name__ == "__main__":
     main()
     # testing
     # test from mac
+
