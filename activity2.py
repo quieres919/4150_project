@@ -1105,6 +1105,7 @@ def main():
         
         # Loop through windows 
         for i in range(num_windows):
+            normalized_linkage_matrix[i][i] = 1  # Set diagonal to 1 since a window is perfectly linked to itself 
             for j in range(i + 1, num_windows):
                 w1 = hist1_windows_indices[i]
                 w2 = hist1_windows_indices[j]
@@ -1119,14 +1120,19 @@ def main():
 
                 # Expected change
                 expected_change = w1percent * w2percent
-                # actual change = bothpercent - expected change
 
+                # actual change = bothpercent - expected change
                 D = bothpercent - expected_change
+
+                # When Dmax is 0, normalization is undefined so must set linkage to 0 
                 if D >= 0:
                     # If D is positive, the maximum positive change is limited by the smaller of the two windows' overlapping percentages
+                    # Dmax represents maximum overlap
+                    # Want to find the max but also accept we need the minimum to have the overlap 
                     Dmax = min(w1percent * (1 - w2percent), w2percent * (1 - w1percent))
                 else:
                     # If D is negative, the maximum negative change is limited by the smaller of the two windows' non-overlapping percentages
+                    # Dmax represents maximum non-overlap (serperation) 
                     Dmax = min(w1percent * w2percent, (1 - w1percent) * (1 - w2percent))
                 
                 # Normalized linkage
