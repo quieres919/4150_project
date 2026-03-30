@@ -3,7 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import random
-
+import networkx as nx
 def is_present(value):
     return value != "0"
 
@@ -1149,9 +1149,46 @@ def main():
             "normalized_linkage_heatmap_hist1.png"
         )
 
+        # in this activity, the normalized linkage table is interpreted as a representation of a network by
+        # applying the following rules:
+        # • The network contains a vertex for each window in the Hist1 region.
+        # • The network contains an undirected edge <A,B> when L(A,B) > Q3, where:
+        # o L(A,B) = the normalized linkage of windows A and B
+        # o Q3 = the Q3 value in the normalized linkage table for the Hist1 region. “The third
+        # quartile (Q3), also known as the upper quartile, is the value that separates the
+        # top 25% of a dataset from the bottom 75%. It's the median of the upper half of
+        # the data, representing the 75th percentile.” (Source: Google AI summary)
+        # o A is not equal to B (i.e., there are no reflexive edges in the graph)
 
+        # Create graph and add edges based on normalized linkage values
+        G = nx.Graph()
+        # Get the upper triangle values (excluding the diagonal) for Q3 calculation
+        upper_triangle_values = normalized_linkage_matrix[np.triu_indices(num_windows, k=1)]
+        Q3 = np.percentile(upper_triangle_values, 75)
 
+        for i in range(num_windows):
+            for j in range(i + 1, num_windows):
+                # See if 2 edges interact stongly   
+                if normalized_linkage_matrix[i][j] > Q3 and i != j:
+                    G.add_edge(i, j)
 
+        centrality = nx.degree_centrality(G)
+        plt.figure(figsize=(8, 6))
+        nx.draw(G, with_labels=True)
+        plt.title("Network Graph of Hist1 Windows Based on Normalized Linkage")
+        plt.savefig("hist1_windows_network_graph.png")
+        plt.close()
+
+        # Print stats 
+        print("\n=== Normalized Linkage Network Graph Stats ===")
+        values = list(centrality.values())
+        print("Average degree centrality:", np.mean(values))
+        print("Max degree centrality:", np.max(values))
+        print("Min degree centrality:", np.min(values))
+        # Print degree centrality for each node sorted by value (Ascending)
+        for node, val in sorted(centrality.items(), key = lambda x: x[1]):
+            print(f"Window {node}: Degree Centrality = {val}")
+                     
 if __name__ == "__main__":
     main()
     # testing
