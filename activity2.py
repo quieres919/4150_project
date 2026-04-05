@@ -194,7 +194,7 @@ def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indic
         pou5f1_count = 0
         sox2_count = 0
         ctcf_count = 0
-
+        
         # iterate only over Hist1 windows, Local I to avoid issues 
         # Local I is like 0 - number of hist1 windows
         # w_idx is global list and in the tens of thousands, but we want to compare to the hist1_region.csv which is smaller
@@ -1162,14 +1162,17 @@ def main():
 
         # Create graph and add edges based on normalized linkage values
         G = nx.Graph()
-        # Get the upper triangle values (excluding the diagonal) for Q3 calculation
-        upper_triangle_values = normalized_linkage_matrix[np.triu_indices(num_windows, k=1)]
-        Q3 = np.percentile(upper_triangle_values, 75)
 
+        # Get the upper triangle values (excluding the diagonal) for Q3 calculation
+        # Such as the top right of a symmetric matrix, we only want to consider each pair once and not the diagonal
+        upper_triangle_values = normalized_linkage_matrix[np.triu_indices(num_windows, k=1)]
+        
+        Q3 = np.percentile(upper_triangle_values, 75)
+        G.add_nodes_from(range(num_windows))  # Add nodes for each window
         for i in range(num_windows):
             for j in range(i + 1, num_windows):
-                # See if 2 edges interact stongly   
-                if normalized_linkage_matrix[i][j] > Q3 and i != j:
+                # See if 2 edges interact stongly  
+                if normalized_linkage_matrix[i][j] >= Q3:
                     G.add_edge(i, j)
 
         centrality = nx.degree_centrality(G)
@@ -1188,7 +1191,73 @@ def main():
         # Print degree centrality for each node sorted by value (Ascending)
         for node, val in sorted(centrality.items(), key = lambda x: x[1]):
             print(f"Window {node}: Degree Centrality = {val}")
-                     
+
+        # Find the 5 nodes with the highest degree centrality
+        top_5 = sorted(centrality.items(), key=lambda x: x[1], reverse=True)[:5]
+        print ("\nTop 5 windows with highest degree centrality:")
+        for node, val in top_5:
+            print(f"Window {node}: Degree Centrality = {val}")
+        
+        # Find the neights of the top 5 nodes with the highest degree centrality
+        # Print size of each neights list
+        # Print percentage of nodes in community that contain hist1 genes
+        # Print percentage of nodes in community that contain LAD 
+        print("\n=== Neighbors of Top 5 Windows with Highest Degree Centrality ===")
+        lad_features = df["LAD"].astype(int).tolist()
+        lad_window_indices = [i for i, val in enumerate(lad_features) if val == 1]
+        for node, val in top_5:
+            # Compute neighbors plus node
+            neighbors = list(G.neighbors(node)) + [node]  
+            print(f"\nWindow {node}:")
+            print(f"Degree Centrality: {val}")
+            print(f"Number of Neighbors: {len(neighbors)}")
+            print(f"Neighbors: {neighbors}")    
+            # Calculate percentage of neighbors that contain hist1 genes
+            hist1_neighbors = sum(1 for neighbor in neighbors if hist1_features[neighbor] == 1)
+            lad_neighbors = sum(1 for neighbor in neighbors if lad_features[neighbor] == 1)
+            total_neighbors = len(neighbors)
+            hist1_percentage = (hist1_neighbors / total_neighbors) * 100 if total_neighbors > 0 else 0
+            lad_percentage = (lad_neighbors / total_neighbors) * 100 if total_neighbors > 0 else 0
+            print(f"Percentage of Neighbors with Hist1 genes: {hist1_percentage:.2f}%")
+            print(f"Percentage of Neighbors with LAD: {lad_percentage:.2f}%")
+
+            # Visualize the community as a graph (node is genomic window), size of node is proportionial to 
+            # degree centrality (use already computed degree centrality
+            # Edge represents an interaction between windows
+            subgraph = G.subgraph(neighbors)
+            plt.figure(figsize=(8, 6))
+            pos = nx.spring_layout(subgraph)
+            node_sizes = [centrality[neighbor] * 1000 for neighbor in subgraph.nodes()]
+            nx.draw(subgraph, pos, with_labels=True, node_size=node_sizes)
+            plt.title(f"Community Graph for Window {node} and its Neighbors")
+            plt.savefig(f"community_graph_window_{node}.png")
+            plt.close()
+
+            # Visualize the community as a heatmap 
+            # 81 x 81
+            # Each cell is one edge in the graph
+            # Heatmap should show only the subgraph that corresponds to the community 
+            subgraph_matrix = np.zeros((num_windows, num_windows))
+            for i in neighbors:
+                for j in neighbors:
+                    subgraph_matrix[i][j] = normalized_linkage_matrix[i][j]
+
+            generate_heatmap(
+                subgraph_matrix,
+                f"Community Heatmap for Window {node} and its Neighbors",
+                "Neighbor Index",
+                "Neighbor Index",
+                f"community_heatmap_window_{node}.png"
+            )
+
+
+
+
+    
+        
+
+        
+    
 if __name__ == "__main__":
     main()
     # testing
