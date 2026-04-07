@@ -1198,20 +1198,31 @@ def main():
         for node, val in top_5:
             print(f"Window {node}: Degree Centrality = {val}")
         
-        # Find the neights of the top 5 nodes with the highest degree centrality
-        # Print size of each neights list
+        # Find the neighbors of the top 5 nodes with the highest degree centrality
+        # Print size of each neighbors list
         # Print percentage of nodes in community that contain hist1 genes
         # Print percentage of nodes in community that contain LAD 
+
+
+        # The top 5 windows with the highest degree centrality are the biggest hubs of chromatin interactions in the hist 1 region 
+        # By looking at the neighbors of these windows, we can see which other windows they interact with and if there are any patterns in the features of those neighbors.
+
+    
         print("\n=== Neighbors of Top 5 Windows with Highest Degree Centrality ===")
+        # Get lad window indices and features for percentage calculation
         lad_features = df["LAD"].astype(int).tolist()
         lad_window_indices = [i for i, val in enumerate(lad_features) if val == 1]
+
+        # loop through nodes in the top 5 windows with the highest degree centrality and print their neighbors and features
         for node, val in top_5:
             # Compute neighbors plus node
             neighbors = list(G.neighbors(node)) + [node]  
+
             print(f"\nWindow {node}:")
             print(f"Degree Centrality: {val}")
             print(f"Number of Neighbors: {len(neighbors)}")
             print(f"Neighbors: {neighbors}")    
+
             # Calculate percentage of neighbors that contain hist1 genes
             hist1_neighbors = sum(1 for neighbor in neighbors if hist1_features[neighbor] == 1)
             lad_neighbors = sum(1 for neighbor in neighbors if lad_features[neighbor] == 1)
@@ -1224,9 +1235,14 @@ def main():
             # Visualize the community as a graph (node is genomic window), size of node is proportionial to 
             # degree centrality (use already computed degree centrality
             # Edge represents an interaction between windows
+
+            # crete a subgraph of the neighbors and the node itself to visualize the community around that node
             subgraph = G.subgraph(neighbors)
             plt.figure(figsize=(8, 6))
+            # pos is the position of the nodes in the graph
             pos = nx.spring_layout(subgraph)
+            # compute node sizes by multiplying degree centrality by a constant to make the nodes visible
+            # we can use the already computed degree centrality for the whole graph and just get the values for the neighbors and node itself
             node_sizes = [centrality[neighbor] * 1000 for neighbor in subgraph.nodes()]
             nx.draw(subgraph, pos, with_labels=True, node_size=node_sizes)
             plt.title(f"Community Graph for Window {node} and its Neighbors")
@@ -1237,6 +1253,8 @@ def main():
             # 81 x 81
             # Each cell is one edge in the graph
             # Heatmap should show only the subgraph that corresponds to the community 
+
+            # Create a submatrix of the normalized linkage matrix that corresponds to the neighbors and the node itself
             subgraph_matrix = np.zeros((num_windows, num_windows))
             for i in neighbors:
                 for j in neighbors:
