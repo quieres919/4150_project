@@ -1277,7 +1277,10 @@ def main():
             # which could indicate that those communities are more tightly connected and may represent more functionally related regions of the genome.
 
 
-
+            # In our communities, one node is in multiple communities which biologically it means that one genomic window can be part of multiple different interaction communities, 
+            # which is consistent with the complex and dynamic nature of chromatin interactions in the nucleus.
+            # A high LAD window in multiple communites could be anchoring multiple different communities to the nuclear periphery, which could indicate that those communities are more likely to be repressed regions of the genome.
+            
 
     
         
