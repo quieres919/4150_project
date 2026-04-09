@@ -1214,9 +1214,32 @@ def main():
         lad_window_indices = [i for i, val in enumerate(lad_features) if val == 1]
 
         # loop through nodes in the top 5 windows with the highest degree centrality and print their neighbors and features
+
+        node_community = {}  # Dictionary to store the community of each node (node and its neighbors)
+        hub_strength = dict(top_5)  # Dictionary to store the strength of each hub (degree centrality value)
+        best_strength = {} # Dictionary to store the best strength of connection to a hub for each node, used to determine community assignment
+
         for node, val in top_5:
-            # Compute neighbors plus node
-            neighbors = list(G.neighbors(node)) + [node]  
+            neighbors = list(G.neighbors(node)) + [node]  # Get neighbors plus the node itself
+            for neighbor in neighbors:
+                # Calculate connection strength between the neighbor and the hub node using the normalized linkage matrix, 
+                # if neighbor is the same as node then set connection strength to 1 since it's perfectly linked to itself
+
+                connection_strength = normalized_linkage_matrix[node][neighbor] if neighbor != node else 1 
+                
+                # Assign if not assigned or if hub is stronger than current assigned hub
+                if neighbor not in node_community or connection_strength > best_strength.get(neighbor, 0):
+
+                    node_community[neighbor] = node  # Assign the neighbor to the community of the current hub
+                    best_strength[neighbor] = connection_strength  # Store the strength of the connection to the hub
+
+
+        for node, val in top_5:
+            # Get the community nodes exclusive for this hub node, which are all the nodes that have been assigned to this hub in the node_community dictionary
+            community_nodes = [n for n, hub in node_community.items() if hub == node]
+
+            # copy the community nodes to a new list to avoid modifying the original list when adding the node itself
+            neighbors = community_nodes.copy()  
 
             print(f"\nWindow {node}:")
             print(f"Degree Centrality: {val}")
