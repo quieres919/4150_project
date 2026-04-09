@@ -1232,6 +1232,10 @@ def main():
             print(f"Percentage of Neighbors with Hist1 genes: {hist1_percentage:.2f}%")
             print(f"Percentage of Neighbors with LAD: {lad_percentage:.2f}%")
 
+            # LAD enrichment can indicate that the community of windows around this node is more likely to be located in the nuclear periphery, which is often associated with gene repression.
+            # These are regions attatched to the outer edge of the nucleus and are generally less active or repressed regions of the genome. 
+            # However, they are strong structural components of the genome and can play important roles in organizing the 3D structure of the genome and regulating gene expression.
+
             # Visualize the community as a graph (node is genomic window), size of node is proportionial to 
             # degree centrality (use already computed degree centrality
             # Edge represents an interaction between windows
@@ -1267,6 +1271,10 @@ def main():
                 "Neighbor Index",
                 f"community_heatmap_window_{node}.png"
             )
+
+            # All heatmaps look fairly similar because of a lot of neighbors are shared between multiple communities meaning that the communities are not very distinct from each other. 
+            # However, we can see that some communities have more strong interactions (higher normalized linkage values) than others, 
+            # which could indicate that those communities are more tightly connected and may represent more functionally related regions of the genome.
 
 
 
