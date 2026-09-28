@@ -21,8 +21,8 @@ Python, NumPy, Pandas, Seaborn, Matplotlib, NetworkX
 
 ## Repository Structure
 
--Data_Science.py           Main analysis pipeline
--Hist1_region_features.csv Feature annotations
--GSE46881_segmentation_at_30000bp.passqc.multibam.gz
--requirements.txt          Python dependencies
--README.md                 Project documentation
+- Data_Science.py           Main analysis pipeline
+- Hist1_region_features.csv Feature annotations
+- GSE46881_segmentation_at_30000bp.passqc.multibam.gz
+- requirements.txt          Python dependencies
+- README.md                 Project documentation
