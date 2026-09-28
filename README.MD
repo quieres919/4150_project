@@ -18,3 +18,11 @@ Python, NumPy, Pandas, Seaborn, Matplotlib, NetworkX
 - Generated similarity heatmaps
 - Performed chromatin interaction network analysis
 - Measured enrichment of Hist1, LAD, RNAPII, and transcription factor features
+
+## Repository Structure
+
+Data_Science.py           Main analysis pipeline
+Hist1_region_features.csv Feature annotations
+GSE46881_segmentation_at_30000bp.passqc.multibam.gz
+requirements.txt          Python dependencies
+README.md                 Project documentation
