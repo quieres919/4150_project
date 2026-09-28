@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import random
 import networkx as nx
+import gzip
 def is_present(value):
     return value != "0"
 
@@ -275,10 +276,10 @@ def compute_feature_percentages(cluster, window_np_presence, hist1_windows_indic
     return hist1_percentages, lad_percentages, vmn_percentages, rnapii_s2p_percentages, rnapii_s5p_percentages, rnapii_s7p_percentages, enhancer_percentages, h3k9me3_percentages, h3k20me3_percentages, h3k27me3_percentages, h3k36me3_percentages, nanog_percentages, pou5f1_percentages, sox2_percentages, ctcf_percentages
 
 def main():
-    filename = "GSE64881_segmentation_at_30000bp.passqc.multibam (2).txt"
+    filename = "GSE64881_segmentation_at_30000bp.passqc.multibam.gz"
     filename2 = "Hist1_region_features.csv"
 
-    with open(filename, "r") as f:
+    with gzip.open(filename, "rt", encoding="utf-8") as f:
 
         # Store coords in list for later use
         window_coords = []
